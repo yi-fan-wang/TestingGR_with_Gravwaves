@@ -1,4 +1,4 @@
-def genwav(B=0.0, **kwds):
+def genwav(dipole_b=0.0, **kwds):
     from pycbc.waveform import get_fd_waveform
     import numpy as np
     import pycbc.conversions as conversions
@@ -15,7 +15,7 @@ def genwav(B=0.0, **kwds):
     kmin = int(kwds['f_lower']/kwds['delta_f'])
     fsampling = hp.sample_frequencies[kmin:]
 
-    beta = -3/224*eta**(2/5)*B
+    beta = -3/224*eta**(2/5)*dipole_b
     dipole = np.exp(1j*beta*(np.pi*M_chirp*fsampling*lal.MTSUN_SI)**(-7/3))
     #dipole[(fsampling>fISCO)] = np.ones_like(fsampling[(fsampling>fISCO)])
     
@@ -26,7 +26,7 @@ def genwav(B=0.0, **kwds):
     return hp,hc
 
 
-def genwav_seobnrv4_rom(B=0.0, **kwds):
+def genwav_seobnrv4_rom(dipole_b=0.0, **kwds):
     from pycbc.waveform import get_fd_waveform
     import numpy as np
     import pycbc.conversions as conversions
@@ -43,7 +43,7 @@ def genwav_seobnrv4_rom(B=0.0, **kwds):
     kmin = int(kwds['f_lower']/kwds['delta_f'])
     fsampling = hp.sample_frequencies[kmin:]
 
-    beta = -3/224*eta**(2/5)*B
+    beta = -3/224*eta**(2/5)*dipole_b
     dipole = np.exp(1j*beta*(np.pi*M_chirp*fsampling*lal.MTSUN_SI)**(-7/3))
     #dipole[(fsampling>fISCO)] = np.ones_like(fsampling[(fsampling>fISCO)])
     
