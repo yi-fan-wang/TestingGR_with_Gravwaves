@@ -1,9 +1,8 @@
-from pycbc.waveform import get_fd_waveform
-import numpy as np
-import pycbc.conversions as conversions
-import lal
-
-def IMRPhenomdipole(B=0.0, **kwds):
+def genwav(B=0.0, **kwds):
+    from pycbc.waveform import get_fd_waveform
+    import numpy as np
+    import pycbc.conversions as conversions
+    import lal
     if 'approximant' in kwds:
         kwds.pop("approximant")
     hp, hc = get_fd_waveform(approximant="IMRPhenomXPHM", **kwds)
