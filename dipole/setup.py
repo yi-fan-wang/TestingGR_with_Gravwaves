@@ -21,4 +21,3 @@ setup (
     py_modules = ['dipole'],
     entry_points = {"pycbc.waveform.fd":"IMRPhenomdipole = dipole:genwav"},
 )
-`
