@@ -19,5 +19,6 @@ setup (
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
     install_requires = ['pycbc'],
     py_modules = ['dipole'],
-    entry_points = {"pycbc.waveform.fd":"IMRPhenomdipole = dipole:genwav"},
+    entry_points = {"pycbc.waveform.fd":"IMRPhenomdipole = dipole:genwav",
+                    "pycbc.waveform.fd":"SEOBNRv4_ROM_dipole = dipole:genwav_seobnrv4_rom"},
 )
