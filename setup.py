@@ -8,12 +8,12 @@ from setuptools import find_packages
 VERSION = '0.0.dev0'
 
 setup (
-    name = 'pycbc-birefringence-mpvnosmall',
+    name = 'pycbc-testingGR',
     version = VERSION,
     description = 'A waveform plugin for PyCBC',
     author = 'Yifan Wang',
     author_email = 'yifan.wang@aei.mpg.de',
-    url = 'http://www.pycbc.org/',
+    url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
     #download_url = 'https://github.com/gwastro/revchirp/tarball/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
     py_modules = ['mpvnosmallwaveform'],
