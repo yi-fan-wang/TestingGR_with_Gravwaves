@@ -27,3 +27,7 @@ First install PyCBC by
 Then install the birefringence waveforms for gravitational waves by
 
 `python setup.py install`
+
+## Documentation
+
+ - [yi-fan-wang.github.io/TestingGR_with_Gravwaves](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves) (to be updated)
