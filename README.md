@@ -14,7 +14,7 @@ Currently, this repository includes the following gravitational wave waveform mo
 
 [1] Tests of Gravitational-Wave Birefringence with the Open Gravitational-Wave Catalog [arXiv](https://arxiv.org/abs/2109.09718). Wang et al.
 
-[2] Gravitational-Wave Implications for the Parity Symmetry of Gravity at GeV Scale [arXiv](https://arxiv.org/abs/2002.05668)
+[2] Gravitational-Wave Implications for the Parity Symmetry of Gravity at GeV Scale [arXiv](https://arxiv.org/abs/2002.05668). Wang et al.
 
 - Gravitational wave dipole radiation (to be added)
 
