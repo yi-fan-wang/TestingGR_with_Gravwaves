@@ -5,7 +5,7 @@ setup.py file for testing birefringence pycbc waveform plugin package
 from setuptools import Extension, setup, Command
 from setuptools import find_packages
 
-VERSION = '0.0.dev0'
+VERSION = '0.1'
 
 setup (
     name = 'pycbc-testingGR',
@@ -16,8 +16,8 @@ setup (
     url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
     #download_url = 'https://github.com/gwastro/revchirp/tarball/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
-    py_modules = ['mpvnosmallwaveform'],
-    entry_points = {"pycbc.waveform.fd":"mpvnosmall=mpvnosmallwaveform:gen"},
+    py_modules = ['birefringence'],
+    entry_points = {"pycbc.waveform.fd":"birefringence=birefringence:gen"},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',

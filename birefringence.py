@@ -1,6 +1,6 @@
 import numpy
 
-def integrand_parityamu_mpvinverse(redshift):
+def integrand(redshift):
     """
     The integrand:
     (1.0 + z)^parity_beta / sqrt(Omega_m (1+z)^3 + Omega_Lambda)
@@ -25,7 +25,7 @@ def gen(**kwds):
 
     hp, hc = get_fd_waveform(approximant=kwds['baseapprox'], **kwds)
     zz = cosmology.redshift(kwds['distance'])
-    intz = integrate.quad(integrand_parityamu_mpvinverse, 0, zz)[0]
+    intz = integrate.quad(integrand, 0, zz)[0]
     temp =  kwds['parity_mpvinverse'] * intz / 1e9 / lal.QE_SI * (lal.H_SI / 2 / lal.PI) * lal.PI * lal.PI / lal.H0_SI
     expminus = numpy.exp(-1j*temp*hp.sample_frequencies**2)
     expplus = 1/expminus
