@@ -34,3 +34,7 @@ def gen(**kwds):
     hc_parity = (hp+1j*hc)*expminus/2j - (hp-1j*hc)*expplus/2j
 
     return hp_parity, hc_parity
+
+def length_in_time(**kwds):
+    from pycbc.waveform.waveform import imrphenomd_length_in_time
+    return imrphenomd_length_in_time(**kwds)

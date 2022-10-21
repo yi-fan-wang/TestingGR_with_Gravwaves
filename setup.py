@@ -17,7 +17,8 @@ setup (
     #download_url = 'https://github.com/gwastro/revchirp/tarball/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
     py_modules = ['birefringence'],
-    entry_points = {"pycbc.waveform.fd":"birefringence=birefringence:gen"},
+    entry_points = {"pycbc.waveform.fd":"birefringence=birefringence:gen",
+                    "pycbc.waveform.length":"birefringence=birefringence:length_in_time"},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
