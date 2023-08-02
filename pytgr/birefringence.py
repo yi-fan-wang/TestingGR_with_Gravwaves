@@ -11,12 +11,11 @@ def integrand(redshift):
     return (1.0+redshift)/ numpy.sqrt(omega_m*(1.0+redshift)**3.0 + omega_l)
 
 
-def gen(**kwds):
+def gen_waveform(**kwds):
     from pycbc.waveform import get_fd_waveform
     from pycbc import cosmology
     import lal
     from scipy import integrate
-    #print(kwds)
 
     if 'approximant' in kwds:
         kwds.pop("approximant")
@@ -26,12 +25,13 @@ def gen(**kwds):
     hp, hc = get_fd_waveform(approximant=kwds['baseapprox'], **kwds)
     zz = cosmology.redshift(kwds['distance'])
     intz = integrate.quad(integrand, 0, zz)[0]
-    temp =  kwds['parity_mpvinverse'] * intz / 1e9 / lal.QE_SI * (lal.H_SI / 2 / lal.PI) * lal.PI * lal.PI / lal.H0_SI
-    expminus = numpy.exp(-1j*temp*hp.sample_frequencies**2)
-    expplus = 1/expminus
 
-    hp_parity = (hp+1j*hc)*expminus/2 + (hp-1j*hc)*expplus/2
-    hc_parity = (hp+1j*hc)*expminus/2j - (hp-1j*hc)*expplus/2j
+    temp =  kwds['parity_mpvinverse'] * intz / 1e9 / lal.QE_SI * (lal.H_SI / 2 / lal.PI) * lal.PI * lal.PI / lal.H0_SI
+    expminus = numpy.exp(-1j * temp * hp.sample_frequencies**2)
+    expplus = 1 / expminus
+
+    hp_parity = (hp + 1j*hc) * expminus / 2 + (hp - 1j*hc) * expplus / 2
+    hc_parity = (hp + 1j*hc) * expminus / 2j - (hp - 1j*hc) * expplus / 2j
 
     return hp_parity, hc_parity
 

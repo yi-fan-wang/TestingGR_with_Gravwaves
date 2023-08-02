@@ -2,27 +2,35 @@
 setup.py file for testing birefringence pycbc waveform plugin package
 """
 
-from setuptools import Extension, setup, Command
-from setuptools import find_packages
+from setuptools import Extension, setup, Command, find_packages
 
-VERSION = '0.1'
+VERSION = '0.2'
 
 setup (
-    name = 'pycbc-testingGR',
+    name = 'PyTGR',
     version = VERSION,
-    description = 'A waveform plugin for PyCBC',
+    description = 'A waveform plugin for PyCBC with non-general relativity templates',
     author = 'Yifan Wang',
     author_email = 'yifan.wang@aei.mpg.de',
     url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
     #download_url = 'https://github.com/gwastro/revchirp/tarball/v%s' % VERSION,
-    keywords = ['pycbc', 'signal processing', 'gravitational waves'],
-    py_modules = ['birefringence'],
-    entry_points = {"pycbc.waveform.fd":"birefringence=birefringence:gen",
-                    "pycbc.waveform.length":"birefringence=birefringence:length_in_time"},
+    keywords = ['testing general relativity', 'gravitational waves', 'pycbc'],
+    packages = find_packages(),
+    #py_modules = ['birefringence'],
+    #package_dir = {'':'src'},
+    #package_dir={'PyTGR': 'src'},
+    entry_points = {"pycbc.waveform.fd":["birefringence=pytgr.birefringence:gen_waveform",
+                                         "massivegraviton=pytgr.massivegraviton:gen_waveform"],
+                    "pycbc.waveform.length":["birefringence=pytgr.birefringence:length_in_time",
+                                             "massivegraviton=pytgr.massivegraviton:length_in_time"]},
+    python_requires='>=3.7',
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Intended Audience :: Science/Research',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering',
