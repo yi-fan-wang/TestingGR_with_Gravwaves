@@ -26,6 +26,7 @@ def gen_waveform(**kwds):
     from pycbc.waveform import get_fd_waveform
     from pycbc import cosmology, pnutils
     import scipy.constants
+    import numpy
 
     # sanity checks
     if kwds['baseapprox'] is None:
@@ -44,10 +45,14 @@ def gen_waveform(**kwds):
     D = pnutils.megaparsecs_to_meters(float(kwds['distance']))
     c = scipy.constants.speed_of_light
     lambda_g = kwds['lambda_g']
-    phi = - numpy.pi * D * c / lambda_g / lambda_g / (1+z) / hp.sample_frequencies
+    phi = - numpy.pi * D * c / lambda_g / lambda_g / (1+z) / hp.sample_frequencies[1:]
+    # slicing with index 1 to avoid dividing zero frequency
 
-    hp_mg = hp * phi
-    hc_mg = hc * phi
+    hp_mg = hp
+    hc_mg = hc
+
+    hp_mg[1:] *= numpy.exp(1j*phi)
+    hc_mg[1:] *= numpy.exp(1j*phi)
 
     return hp_mg, hc_mg
 
