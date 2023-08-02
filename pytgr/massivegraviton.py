@@ -52,7 +52,3 @@ def gen_waveform(**kwds):
     hc[1:] *= numpy.exp(1j*phi)
 
     return hp, hc
-
-def length_in_time(**kwds):
-    from pycbc.waveform.waveform import get_waveform_filter_length_in_time
-    return get_waveform_filter_length_in_time(**kwds)
