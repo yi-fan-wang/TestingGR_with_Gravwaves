@@ -1,20 +1,14 @@
 
 def gen_waveform(**kwds):
     '''
-    Generate waveform with massive graviton correction, assuming
-    no effects are introduced to binary dynamics. Refer to 
-    https://journals.aps.org/prd/pdf/10.1103/PhysRevD.57.2061
-    "Bounding the mass of the graviton using gravitational-wave 
-    observations of inspiralling compact binaries" by Clifford Will
-    for more details
+    Generate waveform with FTA (flexible theory agnostic) correction.
+    Described in https://arxiv.org/pdf/1811.00364.pdf "Tests of 
+    General Relativity with GW170817"
 
     Parameters
     ----------
     kwds: dict
-        The parameters defining the waveform to generator. In particular,
-    one should provide "lambda_g", the Compton wavelength for massive
-    graviton, and 'baseapprox', the based GR waveform, on top of which
-    correction from massive graviton will be added.
+        Only support dchi2 atm.
 
     Returns
     -------
@@ -41,9 +35,9 @@ def gen_waveform(**kwds):
     
     hplal = hp.lal()
     hclal = hc.lal()
-
+    # add FTA correction
     lalsim.SimInspiralTestingGRCorrections(hplal,
-                                       2,2,
+                                       2,2, #only support (2,2) mode
                                        par['mass1']*lal.MSUN_SI,
                                        par['mass2']*lal.MSUN_SI, 
                                        par['spin1z'], 
@@ -66,11 +60,9 @@ def gen_waveform(**kwds):
                                        1,
                                        nonGRdict)
     
-    # Build the FrequencySeries format
-    hpfta = FrequencySeries(hplal.data.data, dtype=hplus.dtype,delta_f=hplal.deltaF, epoch=hplalsim.epoch)
-    hcfta = FrequencySeries(hclal.data.data, dtype=hcross.dtype,delta_f=hplal.deltaF, epoch=hclalsim.epoch)
-    return hp_mg, hc_mg
-
-def length_in_time(**kwds):
-    from pycbc.waveform.waveform import get_waveform_filter_length_in_time
-    return get_waveform_filter_length_in_time(**kwds)
+    # build FrequencySeries format
+    hpfta = FrequencySeries(hplal.data.data, dtype=hplus.data.data.dtype,
+                            delta_f=hplal.deltaF, epoch=hplal.epoch)
+    hcfta = FrequencySeries(hclal.data.data, dtype=hcross.data.data.dtype,
+                            delta_f=hplal.deltaF, epoch=hclal.epoch)
+    return hpfta, hcfta
