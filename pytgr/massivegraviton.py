@@ -48,13 +48,10 @@ def gen_waveform(**kwds):
     phi = - numpy.pi * D * c / lambda_g / lambda_g / (1+z) / hp.sample_frequencies[1:]
     # slicing with index 1 to avoid dividing zero frequency
 
-    hp_mg = hp
-    hc_mg = hc
+    hp[1:] *= numpy.exp(1j*phi)
+    hc[1:] *= numpy.exp(1j*phi)
 
-    hp_mg[1:] *= numpy.exp(1j*phi)
-    hc_mg[1:] *= numpy.exp(1j*phi)
-
-    return hp_mg, hc_mg
+    return hp, hc
 
 def length_in_time(**kwds):
     from pycbc.waveform.waveform import get_waveform_filter_length_in_time
