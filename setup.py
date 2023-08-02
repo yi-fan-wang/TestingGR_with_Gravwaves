@@ -22,7 +22,9 @@ setup (
     entry_points = {"pycbc.waveform.fd":["birefringence = pytgr.birefringence:gen_waveform",
                                          "massivegraviton = pytgr.massivegraviton:gen_waveform",
                                          "fta = pytgr.fta:gen_waveform"],
-                    "pycbc.waveform.length":"birefringence=pytgr:length_in_time"},
+                    "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
+		    			     "massivegraviton = pytgr:length_in_time",
+					     "fta = pytgr:length_in_time"]},
     python_requires='>=3.7',
     classifiers=[
         'Programming Language :: Python',
