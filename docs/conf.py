@@ -12,21 +12,21 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'pycbc-testingGR'
-copyright = '2022, Yifan Wang'
+project = 'PyTGR'
+copyright = '2023, Yifan Wang'
 author = 'Yifan Wang'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.0.dev0'
+release = '0.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -80,7 +80,8 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+#html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -107,7 +108,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pycbc-testingGRdoc'
+htmlhelp_basename = 'PyTGRdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -134,7 +135,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pycbc-testingGR.tex', 'pycbc-testingGR Documentation',
+    (master_doc, 'PyTGR.tex', 'PyTGR Documentation',
      'Yifan Wang', 'manual'),
 ]
 
@@ -144,7 +145,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pycbc-testinggr', 'pycbc-testingGR Documentation',
+    (master_doc, 'pycbc-testinggr', 'PyTGR Documentation',
      [author], 1)
 ]
 
@@ -155,8 +156,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pycbc-testingGR', 'pycbc-testingGR Documentation',
-     author, 'pycbc-testingGR', 'One line description of project.',
+    (master_doc, 'PyTGR', 'PyTGR Documentation',
+     author, 'PyTGR', 'One line description of project.',
      'Miscellaneous'),
 ]
 
