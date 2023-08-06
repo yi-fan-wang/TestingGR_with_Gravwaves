@@ -1,24 +1,17 @@
-# TestingGR_with_Gravwaves
+[![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves)
+# PyTGR (PyTesting General Relativity) 
 
-General Relativity is the most beautiful and successful theory to describe gravity in modern physics. Despite its success, there are motivations to go beyond General Relativity both from theoretical and observational sides, such as addressing the singularity problem, quantizing gravity, accounting for the nature of dark matter and dark energy, etc. Since the first detection in 2015, gravitational waves provides a golden oppoturnity to test General Relativity in a brand new regime and look for signs of new physics. One of the effective ways to test General Relativity with gravitational waves is to construct gravitational wave templates predicted by modified gravity theories, then compare templates with data. Within a Bayesian inference framework, the preference of data towards General Relativity or a modified gravity can be established by quantitative indicators, such as Bayes Odds.
+This code collects a variety of gravitational waveform templates in modified gravity, and can be easily called by [PyCBC](http://pycbc.org/) based on the [PyCBC waveform plugin](http://pycbc.org/pycbc/latest/html/waveform_plugin.html). This enables any subsequent gravitational wave data analysis with PyCBC, such as Bayesian parameter estimation with a non-GR waveform template, using matched-filtering to search for non-GR gravitational wave signals , etc. 
 
-Therefore, to test General Relativity, it's crucial to build beyond-General-Relativity waveforms with clear physics meanings first. This repository collects different waveform models, and make use of the [PyCBC waveform plugin](http://pycbc.org/pycbc/latest/html/waveform_plugin.html) to make models avaiable to analyze real gravitational-wave data. Such that it's reproducible and serves as examples for the community to build any new waveform models for data analysis. 
-
+Currently, the models supported are:
+ - Massive graviton
+ - Gravitational wave birefringence `[1,2]`
+ - dipole radiation
+ - FTA (flexible theory agnostic)
+   
 Constribution are welcome!
 
-
-## Waveform models
-Currently, this repository includes the following gravitational wave waveform models for compact binary coalescence:
-
-- Gravitational wave birefreingence `[1,2]`
-
-[1] Tests of Gravitational-Wave Birefringence with the Open Gravitational-Wave Catalog [arXiv](https://arxiv.org/abs/2109.09718). Wang et al.
-
-[2] Gravitational-Wave Implications for the Parity Symmetry of Gravity at GeV Scale [arXiv](https://arxiv.org/abs/2002.05668). Wang et al.
-
-- Gravitational wave dipole radiation (to be added)
-
-## Using the waveform to analyze GW with PyCBC
+## Usage
 
 First install PyCBC by
 
@@ -28,6 +21,10 @@ Then install the birefringence waveforms for gravitational waves by
 
 `python setup.py install`
 
-## Documentation
+More information should in principle be in the [documentation](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves/html/index.html) and [examples](https://github.com/yi-fan-wang/TestingGR_with_Gravwaves/tree/master/examples), which are under construction.
 
- - [yi-fan-wang.github.io/TestingGR_with_Gravwaves](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves) (to be updated)
+## References
+
+[1] Tests of Gravitational-Wave Birefringence with the Open Gravitational-Wave Catalog [arXiv](https://arxiv.org/abs/2109.09718). Wang et al.
+
+[2] Gravitational-Wave Implications for the Parity Symmetry of Gravity at GeV Scale [arXiv](https://arxiv.org/abs/2002.05668). Wang et al.
