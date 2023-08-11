@@ -16,6 +16,7 @@ def gen_waveform(**kwds):
         Cross polarization time series
     '''
     from pycbc.waveform import get_fd_waveform
+    import numpy
 
     # sanity checks
     if kwds['baseapprox'] is None:
