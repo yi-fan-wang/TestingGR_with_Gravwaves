@@ -1,5 +1,3 @@
-
-
 def gen_waveform(**kwds):
     from pycbc.waveform import get_fd_waveform
     import lal, numpy
