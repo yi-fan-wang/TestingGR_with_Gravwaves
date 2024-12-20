@@ -23,7 +23,9 @@ setup (
                                          "massivegraviton = pytgr.massivegraviton:gen_waveform",
                                          "fta = pytgr.fta:gen_waveform",
                                          "ppe = pytgr.ppe:gen_waveform",
-                                         "lsa = pytgr.lineofsight:gen_waveform"],
+                                         "lsa = pytgr.lineofsight:gen_waveform"
+                                         ],
+                    "pycbc.waveform.td":["nrsxs = pytgr.nr:gen_sxs_waveform"],
                     "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
 		    			                     "massivegraviton = pytgr:length_in_time",
 					                         "fta = pytgr:length_in_time",
