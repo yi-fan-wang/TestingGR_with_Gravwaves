@@ -13,7 +13,6 @@ setup (
     author = 'Yifan Wang',
     author_email = 'yifan.wang@aei.mpg.de',
     url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
-    #download_url = 'https://github.com/gwastro/revchirp/tarball/v%s' % VERSION,
     keywords = ['testing general relativity', 'gravitational waves', 'pycbc'],
     packages = find_packages(),
     #py_modules = ['birefringence'],
@@ -45,5 +44,9 @@ setup (
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+    ],
+    install_requires=[
+        "pycbc",
+        "sxs<=v2022.5.6"
     ],
 )
