@@ -1,9 +1,11 @@
 import numpy
 import lal
+import lalsimulation as lalsim
 import sxs
 import scipy.interpolate
 import pycbc.types
 import pycbc.waveform.utils
+import h5py
 
 def gen_sxs_waveform(sxs_id, extrapolation_order=2, download=False, **kwds):
 	wf = sxs.load(sxs_id + "/Lev/rhOverM",extrapolation_order=extrapolation_order,download=download)
@@ -41,3 +43,40 @@ def gen_sxs_waveform(sxs_id, extrapolation_order=2, download=False, **kwds):
 	hc_taper = pycbc.waveform.utils.td_taper(hc, hc.start_time, hc.start_time + window)
 	
 	return hp_taper, hc_taper
+
+def gen_lvcnr_waveform(data_file, **kwds):
+	'''
+	Generate a LVC NR waveform from a file path
+	'''
+	with h5py.File(data_file, "r") as f:
+		m1 = f.attrs["mass1"] / (f.attrs["mass1"] + f.attrs["mass2"])
+		m2 = f.attrs["mass2"] / (f.attrs["mass1"] + f.attrs["mass2"])
+
+	fStart = kwds['f_lower']
+	fRef = kwds['f_ref']
+	deltaT = kwds['delta_t']
+
+	mtotal = kwds['mass1'] + kwds['mass2']
+	m1 *= (mtotal * lal.MSUN_SI)
+	m2 *= (mtotal * lal.MSUN_SI)
+	s1x, s1y, s1z, s2x, s2y, s2z = lalsim.SimInspiralNRWaveformGetSpinsFromHDF5File(
+					fStart, mtotal, data_file)
+	inclination = kwds['inclination']
+	distance = kwds['distance'] * 1e6 * lal.PC_SI
+	phiRef = kwds['coa_phase']
+	
+	params = lal.CreateDict()
+	lalsim.SimInspiralWaveformParamsInsertNumRelData(params, data_file)
+	
+	hp, hc = lalsim.SimInspiralChooseTDWaveform(m1, m2,
+                                            	s1x, s1y, s1z, s2x, s2y, s2z,
+                                            	distance, inclination,
+                                            	phiRef, 0,
+                                            	0, 0, deltaT,
+                                            	fStart, fRef,
+                                            	params, approximant=lalsim.NR_hdf5)
+
+	hp = pycbc.types.TimeSeries(hp.data.data, delta_t=deltaT, epoch=hp.epoch)
+	hc = pycbc.types.TimeSeries(hc.data.data, delta_t=deltaT, epoch=hc.epoch)
+	
+	return hp, hc
