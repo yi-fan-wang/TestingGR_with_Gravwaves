@@ -71,7 +71,7 @@ def gen_lvcnr_waveform(data_file, **kwds):
 	hp, hc = lalsim.SimInspiralChooseTDWaveform(m1, m2,
                                             	s1x, s1y, s1z, s2x, s2y, s2z,
                                             	distance, inclination,
-                                            	phiRef, 0,
+                                            	phiRef, numpy.pi/2,
                                             	0, 0, deltaT,
                                             	fStart, fRef,
                                             	params, approximant=lalsim.NR_hdf5)
