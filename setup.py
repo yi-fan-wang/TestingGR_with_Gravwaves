@@ -25,7 +25,9 @@ setup (
                                          "lsa = pytgr.lineofsight:gen_waveform"
                                          ],
                     "pycbc.waveform.td":["nrsxs = pytgr.nr:gen_sxs_waveform",
-                                         "lvcnr = pytgr.nr:gen_lvcnr_waveform",],
+                                         "lvcnr = pytgr.nr:gen_lvcnr_waveform",
+                                         "NRSur7dq4QNM = pytgr.nrsurqnm:gen_nrsurqnm"
+                                         ],
                     "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
 		    			                     "massivegraviton = pytgr:length_in_time",
 					                         "fta = pytgr:length_in_time",
@@ -48,6 +50,6 @@ setup (
     ],
     install_requires=[
         "pycbc",
-        "sxs<=v2022.5.6"
+        "sxs"
     ],
 )
