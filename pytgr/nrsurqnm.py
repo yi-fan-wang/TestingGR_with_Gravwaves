@@ -1,47 +1,79 @@
-from pycbc.waveform import get_td_waveform_modes
-
 import numpy as np
-import postmerger
-fit = postmerger.load_fit('3dq8_20M')
-
 import lal
 
-from pycbc.types import (TimeSeries, float64, zeros)
+from pycbc.conversions import get_final_from_initial, get_lm_f0tau
+from pycbc.waveform import get_td_waveform_modes
+from pycbc.types import (TimeSeries, complex64, zeros)
 
 def gen_nrsurqnm(**kwds):
     hlm = get_td_waveform_modes(approximant='NRSur7dq4', mass1=kwds['mass1'], mass2=kwds['mass2'],
-                                spin1x=kwds['spin1x'], spin1y=kwds['spin1y'], spin1z=kwds['spin1z'],
-                                spin2x=kwds['spin2x'], spin2y=kwds['spin2y'], spin2z=kwds['spin2z'],
-                                delta_t=kwds['delta_t'], f_lower=kwds['f_lower'],mode_array=['22','33','44'])
+                            spin1x=kwds['spin1x'], spin1y=kwds['spin1y'], spin1z=kwds['spin1z'],
+                            spin2x=kwds['spin2x'], spin2y=kwds['spin2y'], spin2z=kwds['spin2z'],
+                            distance = kwds['distance'],
+                            delta_t=kwds['delta_t'], f_lower=kwds['f_lower'],mode_array=['22','33','44'])
     h44 = hlm[(4,4)][0] + 1j * hlm[(4,4)][1]
     qnm_par = {}
-    qnm_par['final_mass'] = postmerger.final_mass(kwds['mass1'], kwds['mass2'], kwds['spin1z'], kwds['spin2z'], aligned_spins=True)
-    qnm_par['final_spin'] = postmerger.final_spin(kwds['mass1'], kwds['mass2'], kwds['spin1z'], kwds['spin2z'], aligned_spins=True)
+    qnm_par['final_mass'], qnm_par['final_spin'] = get_final_from_initial(
+       kwds['mass1'], kwds['mass2'], 
+       kwds['spin1x'], kwds['spin1y'], kwds['spin1z'],
+       kwds['spin2x'], kwds['spin2y'], kwds['spin2z'], 
+       approximant='NRSur7dq4',
+       f_ref=kwds['f_ref'])
+
     qnm_par['freq'] = {}
     qnm_par['tau'] = {}
-    qnm_par['freq']['440'], qnm_par['tau']['440'] = postmerger.qnm_Kerr(qnm_par['final_mass'], qnm_par['final_spin'],(4,4,0), prograde=1, SI_units=True, qnm_method='interp')
+    for mode in kwds['ringdown_mode']:
+        if len(mode) == 3:
+            l = int(mode[0])
+            m = int(mode[1])
+            n = int(mode[2])
+            qnm_par['freq'][mode], qnm_par['tau'][mode] = get_lm_f0tau(qnm_par['final_mass'], 
+                                                                         qnm_par['final_spin'],
+                                                                         l,m,n)
+        elif len(mode) == 6:
+            l1 = int(mode[0])
+            m1 = int(mode[1])
+            n1 = int(mode[2])
+            l2 = int(mode[3])
+            m2 = int(mode[4])
+            n2 = int(mode[5])
+            f1, tau1 = get_lm_f0tau(qnm_par['final_mass'], qnm_par['final_spin'], l1,m1,n1)
+            f2, tau2 = get_lm_f0tau(qnm_par['final_mass'], qnm_par['final_spin'], l2,m2,n2)
+            qnm_par['freq'][mode] = f1 + f2
+            qnm_par['tau'][mode] = 1 / (1/tau1 + 1/tau2)
+        else:
+            raise ValueError("Invalid mode format in rindown_mode")
+    print("QNM parameters:", qnm_par)
+    t_final = max(qnm_par['tau'][m] for m in kwds['ringdown_mode']) * np.log(1000)
+    ringdown_start_time = kwds['toffset']
+    start_idx = int(float(ringdown_start_time - h44.start_time) * h44.sample_rate)
+    end_idx = int(float(ringdown_start_time + t_final - h44.start_time) * h44.sample_rate)
 
-    mode = ['440']
-    t_final = max(qnm_par['tau'][m] for m in mode) * np.log(1000) # to decay by 1e-3 for the slowest decaying mode
-    kmax = int(t_final / kwds['delta_t']) + 1
+    start_time = h44.sample_times[start_idx]
+    end_time = h44.sample_times[end_idx]
+    h44_slice = h44.time_slice(start_time, end_time)
+    N = len(h44_slice)
 
-    trans_time = kwds['trans_time']
-    start_idx = int(float(trans_time - h44.start_time) * h44.sample_rate)
-    out = TimeSeries(zeros(kmax, dtype=float64), delta_t=kwds['delta_t'], epoch = h44.sample_times[start_idx])
-    sample_times = out.sample_times.numpy()
-
-	
-    for m in mode:
-        amp = 1e-22
-        phi = 0
+    qnm = {}
+    for m in kwds['ringdown_mode']:
+        qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=kwds['delta_t'], epoch = start_time)
+        sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
-        ringdown = amp * np.exp(-1j * phi) * np.exp(-1j * omega * (sample_times - trans_time) )
-        out += ringdown
-    
-    h44_slice = h44.time_slice(float(out.start_time), float(out.end_time))
-    optimal_phase = -np.angle(h44_slice.inner(out))
-    optimal_amp = np.abs(h44_slice.inner(out)) / np.real(out.inner(out))
-    out *= optimal_amp * np.exp(1j * optimal_phase)
+        qnm[m].data = 1e-22 * np.exp(-1j * omega * (sample_times - start_time) )
+
+    M = len(kwds['ringdown_mode'])
+    G = np.zeros((N, M), dtype=complex)
+    print(N,M)
+    for k, m in enumerate(kwds['ringdown_mode']):
+        G[:, k] = qnm[m].data
+
+    G_H = G.conj().T
+    A = np.linalg.solve(G_H @ G, G_H @ h44_slice.data)
+
+    allqnm = 0
+    for i, m in enumerate(kwds['ringdown_mode']):
+        qnm[m].data *= A[i]
+        allqnm += qnm[m]
 
     h = 0
     for l in range(2,4):
@@ -52,7 +84,7 @@ def gen_nrsurqnm(**kwds):
 	
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
     Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)
-    qnm44 = out *  Y_44 + np.conj(out) * Y_4m4
+    qnm44 = allqnm *  Y_44 + np.conj(allqnm) * Y_4m4
 	
     h.data[start_idx:start_idx+len(qnm44)] += qnm44
 	
