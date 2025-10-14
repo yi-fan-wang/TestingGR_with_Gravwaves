@@ -8,6 +8,7 @@ import pycbc.waveform.utils
 import h5py
 
 def gen_sxs_waveform(sxs_id, extrapolation_order=2, download=False, **kwds):
+	#TODO: add support for referencing to a specific time by interpolating frequency and time
 	wf = sxs.load(sxs_id + "/Lev/rhOverM",extrapolation_order=extrapolation_order,download=download)
 	metadata = sxs.load(sxs_id + "/Lev/metadata.json", download=download)
 	

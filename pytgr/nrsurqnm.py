@@ -92,3 +92,18 @@ def gen_nrsurqnm(**kwds):
     h.data[start_idx:start_idx+len(qnm44)] += qnm44
     #print(qnm44.data)
     return h.real(), -h.imag()
+
+
+def gen_nrsur7dq4_tdtaper(**kwds):
+    from pycbc.waveform import get_td_waveform
+    import pycbc.waveform.utils
+
+    if 'approximant' in kwds:
+        kwds.pop("approximant")
+    hp, hc = get_td_waveform(approximant='NRSur7dq4', **kwds)
+
+    window = 0.05
+    hp_taper = pycbc.waveform.utils.td_taper(hp, hp.start_time, hp.start_time + window)
+    hc_taper = pycbc.waveform.utils.td_taper(hc, hc.start_time, hc.start_time + window)
+
+    return hp_taper, hc_taper
