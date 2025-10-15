@@ -102,7 +102,11 @@ def gen_nrsur7dq4_tdtaper(**kwds):
         kwds.pop("approximant")
     hp, hc = get_td_waveform(approximant='NRSur7dq4', **kwds)
 
-    window = 0.05
+    if 'window' not in kwds or kwds['window'] is None:
+        window = 0.05
+    else:
+        window = kwds['window']
+
     hp_taper = pycbc.waveform.utils.td_taper(hp, hp.start_time, hp.start_time + window)
     hc_taper = pycbc.waveform.utils.td_taper(hc, hc.start_time, hc.start_time + window)
 
