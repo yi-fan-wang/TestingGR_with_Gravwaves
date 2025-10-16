@@ -24,9 +24,9 @@ def gen_nrsurqnm(**kwds):
     h44 = hlm[(4,4)][0] + 1j * hlm[(4,4)][1]
     qnm_par = {}
     qnm_par['final_mass'], qnm_par['final_spin'] = get_final_from_initial(
-       kwds['mass1'], kwds['mass2'], 
+       kwds['mass1'], kwds['mass2'],
        kwds['spin1x'], kwds['spin1y'], kwds['spin1z'],
-       kwds['spin2x'], kwds['spin2y'], kwds['spin2z'], 
+       kwds['spin2x'], kwds['spin2y'], kwds['spin2z'],
        approximant='NRSur7dq4',
        f_ref=kwds['f_ref'])
 
@@ -82,6 +82,10 @@ def gen_nrsurqnm(**kwds):
 
     allqnm = 0
     for i, m in enumerate(kwds['ringdown_mode']):
+        delta_param = 'delta_' + m
+        if delta_param in kwds and kwds[delta_param] is not None:
+            #print("Applying deviation", delta_param, kwds[delta_param])
+            A[i] *= (1 + kwds[delta_param])
         qnm[m].data *= A[i]
         allqnm += qnm[m]
     #print(allqnm.data)
