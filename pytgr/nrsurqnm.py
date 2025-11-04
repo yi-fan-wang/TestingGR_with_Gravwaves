@@ -243,14 +243,10 @@ def gen_nrsur_linearqnm(**kwds):
         load_interp, load_spin, load_ratio = load_interpolation_function(f'data/spin_{mode}_interpolation.npy', mode)
         chi_f = qnm_par['final_spin']
         ratio = load_interp(chi_f)
-
         mode1 = mode[:3]
         mode2 = mode[3:]
-        geo_mf = qnm_par['final_mass'] / (kwds['mass1'] + kwds['mass2'])
-        normalize_A1 = A_modes_22[mode1] / geo_mf
-        normalize_A2 = A_modes_22[mode2] / geo_mf
-
-        A_modes_quadratic[mode] = normalize_A1 * normalize_A2 * ratio * geo_mf
+        conversion_factor = kwds['distance'] * 1e6 * lal.PC_SI / qnm_par['final_mass'] / lal.MRSUN_SI
+        A_modes_quadratic[mode] = A_modes_22[mode1] * A_modes_22[mode2] * ratio * conversion_factor
 
     # subtract quadratic modes from (4,4) mode
 
