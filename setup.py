@@ -15,6 +15,10 @@ setup (
     url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
     keywords = ['testing general relativity', 'gravitational waves', 'pycbc'],
     packages = find_packages(),
+    package_data={  
+        'pytgr': ['data/*.npy'],
+    },
+    include_package_data=True,
     #py_modules = ['birefringence'],
     #package_dir = {'':'src'},
     #package_dir={'PyTGR': 'src'},
@@ -51,6 +55,7 @@ setup (
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     ],
     install_requires=[
+        "scipy",
         "pycbc",
     ],
 )

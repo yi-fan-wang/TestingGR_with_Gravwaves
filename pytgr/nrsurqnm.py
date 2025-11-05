@@ -1,3 +1,4 @@
+import pkg_resources
 import numpy as np
 import lal
 from scipy.interpolate import interp1d
@@ -201,7 +202,7 @@ QUADRATIC_MODES = ['220220', '220221']
 _interpolation_cache = {}
 
 for mode in QUADRATIC_MODES:
-    filename = f'data/spin_{mode}_interpolation.npy'
+    filename = pkg_resources.resource_filename(__name__, f'data/spin_{mode}_interpolation.npy')
     data = np.load(filename, allow_pickle=True).item()
     spin_loaded = data['spin']
     complex_ratio_loaded = data[mode+'_complex_ratio']
