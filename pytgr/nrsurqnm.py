@@ -156,7 +156,7 @@ def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target, **kwds)
         if delta_param in kwds and kwds[delta_param] is not None:
             #print("Applying deviation", delta_param, kwds[delta_param])
             A_modes[m] *= (1 + kwds[delta_param])
-        qnm[m].data *= A[m]
+        qnm[m].data *= A_modes[m]
         allqnm += qnm[m]
 
     for m in qnm_modes:
@@ -197,15 +197,22 @@ def get_qnmpar(qnm_modes, **kwds):
             raise ValueError("Invalid mode format in rindown_mode")
     return qnm_par
 
-def load_interpolation_function(filename,label):
-    """
-    load interpolation function for quadratic modes
-    """
+QUADRATIC_MODES = ['220220', '220221']
+_interpolation_cache = {}
+
+for mode in QUADRATIC_MODES:
+    filename = f'data/spin_{mode}_interpolation.npy'
     data = np.load(filename, allow_pickle=True).item()
     spin_loaded = data['spin']
-    complex_ratio_loaded = data[label+'_complex_ratio']
+    complex_ratio_loaded = data[mode+'_complex_ratio']
     interp_loaded = interp1d(spin_loaded, complex_ratio_loaded, kind='cubic', fill_value="extrapolate")
-    return interp_loaded, spin_loaded, complex_ratio_loaded
+    _interpolation_cache[mode] = interp_loaded
+
+def load_interpolation_function(label):
+    """
+    load interpolation function for quadratic modes from cache
+    """
+    return _interpolation_cache[label]
 
 def gen_nrsur_linearqnm(**kwds):
     '''
@@ -218,6 +225,7 @@ def gen_nrsur_linearqnm(**kwds):
                                 distance = kwds['distance'],
                                 delta_t=kwds['delta_t'],
                                 f_lower=kwds['f_lower'],
+                                f_ref=kwds['f_ref'],
                                 mode_array=['22','21','20','33','32','31','30','44'])
     
     h = 0
@@ -232,13 +240,19 @@ def gen_nrsur_linearqnm(**kwds):
     qnm_par = get_qnmpar(['220','221','222','220220','220221'], **kwds)
     
     # construct QNM from (2,2) mode
-    A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, kwds['t_offset'], h22, **kwds)
+    qnm_start_time = kwds['t_offset']
+    if qnm_start_time >= 0.002:
+        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, kwds['t_offset'], h22, **kwds)
+    else:
+        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, 0.002, h22, **kwds)
+        for m in A_modes_22:
+            omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
+            A_modes_22[m] *= np.exp(-1j * omega * (qnm_start_time-0.002))
 
-    # construct quadratic modes
+    # removing quadratic modes
     A_modes_quadratic = {}
-    quadratic_modes = ['220220','220221']
-    for mode in quadratic_modes:
-        load_interp, load_spin, load_ratio = load_interpolation_function(f'data/spin_{mode}_interpolation.npy', mode)
+    for mode in QUADRATIC_MODES:
+        load_interp = load_interpolation_function(mode)
         chi_f = qnm_par['final_spin']
         ratio = load_interp(chi_f)
         mode1 = mode[:3]
@@ -254,12 +268,16 @@ def gen_nrsur_linearqnm(**kwds):
     N = len(h44_slice)
 
     qnm = {}
-    for m in quadratic_modes:
+    if 'quadratic_tgr' in kwds and kwds['quadratic_tgr'] is not None:
+        tgr = kwds['quadratic_tgr']
+    else:
+        tgr = 1.0
+    for m in QUADRATIC_MODES:
         qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
         sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
         qnm[m].data = A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - start_time) )
-        h44_slice -= qnm[m]
+        h44_slice -= tgr * qnm[m]
 
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
     Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)

@@ -27,6 +27,7 @@ setup (
                     "pycbc.waveform.td":["nrsxs = pytgr.nr:gen_sxs_waveform",
                                          "lvcnr = pytgr.nr:gen_lvcnr_waveform",
                                          "NRSur7dq4QNM = pytgr.nrsurqnm:gen_nrsurqnm",
+                                         "NRSur7dq4_quadratic = pytgr.nrsurqnm:gen_nrsur_linearqnm",
                                          "NRSur7dq4_tdtaper = pytgr.nrsurqnm:gen_nrsur7dq4_tdtaper"
                                          ],
                     "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
