@@ -241,9 +241,9 @@ def gen_nrsur_linearqnm(**kwds):
     qnm_par = get_qnmpar(['220','221','222','220220','220221'], **kwds)
     
     # construct QNM from (2,2) mode
-    qnm_start_time = kwds['t_offset']
+    qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
-        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, kwds['t_offset'], h22, **kwds)
+        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, kwds['toffset'], h22, **kwds)
     else:
         A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, 0.002, h22, **kwds)
         for m in A_modes_22:
@@ -262,7 +262,7 @@ def gen_nrsur_linearqnm(**kwds):
         A_modes_quadratic[mode] = A_modes_22[mode1] * A_modes_22[mode2] * ratio * conversion_factor
 
     # subtract quadratic modes from (4,4) mode
-    start_idx = int(float(kwds['t_offset'] - h44.start_time) * h44.sample_rate)
+    start_idx = int(float(kwds['toffset'] - h44.start_time) * h44.sample_rate)
     start_time = h44.sample_times[start_idx]
     end_time = h44.sample_times[-1]
     h44_slice = h44.time_slice(start_time, end_time)
