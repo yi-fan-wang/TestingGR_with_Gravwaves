@@ -238,7 +238,7 @@ def gen_nrsur_linearqnm(**kwds):
 
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
     h44 = hlm[(4,4)][0] + 1j * hlm[(4,4)][1]
-    qnm_par = get_qnmpar(['220','221','222','220220','220221'], **kwds)
+    qnm_par = get_qnmpar(['220','221','222'] + QUADRATIC_MODES, **kwds)
     
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
