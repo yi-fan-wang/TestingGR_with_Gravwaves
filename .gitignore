@@ -2,3 +2,4 @@ build
 __pycache__
 .ipynb_checkpoints
 PyTGR.egg-info/
+.DS_Store

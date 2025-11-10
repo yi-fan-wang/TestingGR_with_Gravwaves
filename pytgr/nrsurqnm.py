@@ -198,7 +198,7 @@ def get_qnmpar(qnm_modes, **kwds):
             raise ValueError("Invalid mode format in rindown_mode")
     return qnm_par
 
-QUADRATIC_MODES = ['220220', '220221']
+QUADRATIC_MODES = ['220220', '220221','221221']
 _interpolation_cache = {}
 
 for mode in QUADRATIC_MODES:
