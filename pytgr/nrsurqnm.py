@@ -12,11 +12,14 @@ def gen_nrsurqnm(**kwds):
                             spin1x=kwds['spin1x'], spin1y=kwds['spin1y'], spin1z=kwds['spin1z'],
                             spin2x=kwds['spin2x'], spin2y=kwds['spin2y'], spin2z=kwds['spin2z'],
                             distance = kwds['distance'],
-                            delta_t=kwds['delta_t'], f_lower=kwds['f_lower'],mode_array=['22','21','20','33','32','31','30','44'])
+                            delta_t=kwds['delta_t'], f_lower=kwds['f_lower'],
+                            mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
     
     h = 0
-    for l in range(2,4):
+    for l in range(2,5):
         for m in range(-1*l, l+1):
+            if l==4 and abs(m)==4:
+                continue # skip 44 mode for ringdown treatment later
             h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
             h += h_modes * Y_lm
@@ -58,7 +61,7 @@ def gen_nrsurqnm(**kwds):
     #print("QNM parameters:", qnm_par)
     t_final = max(qnm_par['tau'][m] for m in kwds['ringdown_mode']) * np.log(1000)
     ringdown_start_time = kwds['toffset']
-    start_idx = int(float(ringdown_start_time - h44.start_time) * h44.sample_rate)
+    start_idx = int(np.floor(float(ringdown_start_time - h44.start_time) * h44.sample_rate))
     end_idx = int(float(ringdown_start_time + t_final - h44.start_time) * h44.sample_rate)
 
     start_time = h44.sample_times[start_idx]
@@ -124,7 +127,7 @@ def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target, **kwds)
     Decompose the target waveform h_target into the given QNM modes starting from ringdown_start_time
     '''
     t_duration = max(qnm_par['tau'][m] for m in qnm_modes) * np.log(1000)
-    start_idx = int(float(ringdown_start_time - h_target.start_time) * h_target.sample_rate)
+    start_idx = int(np.floor(float(ringdown_start_time - h_target.start_time) * h_target.sample_rate))
     end_idx = int(float(ringdown_start_time + t_duration - h_target.start_time) * h_target.sample_rate)
 
     start_time = h_target.sample_times[start_idx]
@@ -153,15 +156,17 @@ def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target, **kwds)
 
     allqnm = 0
     for m in qnm_modes:
-        delta_param = 'delta_' + m
-        if delta_param in kwds and kwds[delta_param] is not None:
-            #print("Applying deviation", delta_param, kwds[delta_param])
-            A_modes[m] *= (1 + kwds[delta_param])
+        #delta_param = 'delta_' + m
+        #if delta_param in kwds and kwds[delta_param] is not None:
+        #    #print("Applying deviation", delta_param, kwds[delta_param])
+        #    A_modes[m] *= (1 + kwds[delta_param])
         qnm[m].data *= A_modes[m]
         allqnm += qnm[m]
 
     for m in qnm_modes:
         A_modes[m] = A_modes[m] * dynamical_range
+        omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
+        A_modes[m] *= np.exp(-1j * omega * (ringdown_start_time - start_time) )
 
     return A_modes, allqnm, h_target_slice
 
@@ -227,29 +232,49 @@ def gen_nrsur_linearqnm(**kwds):
                                 delta_t=kwds['delta_t'],
                                 f_lower=kwds['f_lower'],
                                 f_ref=kwds['f_ref'],
-                                mode_array=['22','21','20','33','32','31','30','44'])
+                                mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
     
     h = 0
-    for l in range(2,4):
+    for l in range(2,5):
         for m in range(-1*l, l+1):
+            if l==4 and abs(m)==4:
+                continue # skip 44 mode for ringdown treatment later
             h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
             h += h_modes * Y_lm
 
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
-    h44 = hlm[(4,4)][0] + 1j * hlm[(4,4)][1]
     qnm_par = get_qnmpar(['220','221','222'] + QUADRATIC_MODES, **kwds)
     
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
-        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, kwds['toffset'], h22, **kwds)
+        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, qnm_start_time, h22, **kwds)
     else:
-        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, 0.002, h22, **kwds)
-        for m in A_modes_22:
-            omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
-            A_modes_22[m] *= np.exp(-1j * omega * (qnm_start_time-0.002))
-
+        fit_A_modes_22 = {}
+        fit_A_modes_22['220'] = []
+        fit_A_modes_22['221'] = []
+        for t_fit in np.arange(0.002, 0.00367, 0.0003333):
+            this_A, _, _ = qnm_decomposition(['220','221','222'], qnm_par, t_fit, h22, **kwds)
+            # shift to qnm_start_time
+            for m in ['220','221']:
+                omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
+                this_A[m] *= np.exp(-1j * omega * (qnm_start_time - t_fit))
+            fit_A_modes_22['220'].append(this_A['220'])
+            fit_A_modes_22['221'].append(this_A['221'])
+        
+        A_modes_22 = {}
+        for m in ['220','221']:
+            real_parts = [z.real for z in fit_A_modes_22[m]]
+            imag_parts = [z.imag for z in fit_A_modes_22[m]]
+            real_mean = np.mean(real_parts)
+            real_std = np.std(real_parts)
+            imag_mean = np.mean(imag_parts)
+            imag_std = np.std(imag_parts)
+            real_samples = np.random.normal(real_mean, real_std, 1)
+            imag_samples = np.random.normal(imag_mean, imag_std, 1)
+            A_modes_22[m] = real_samples + 1j * imag_samples
+            
     # removing quadratic modes
     A_modes_quadratic = {}
     for mode in QUADRATIC_MODES:
@@ -262,7 +287,8 @@ def gen_nrsur_linearqnm(**kwds):
         A_modes_quadratic[mode] = A_modes_22[mode1] * A_modes_22[mode2] * ratio * conversion_factor
 
     # subtract quadratic modes from (4,4) mode
-    start_idx = int(float(kwds['toffset'] - h44.start_time) * h44.sample_rate)
+    h44 = hlm[(4,4)][0] + 1j * hlm[(4,4)][1]
+    start_idx = int(np.floor(float(qnm_start_time - h44.start_time) * h44.sample_rate))
     start_time = h44.sample_times[start_idx]
     end_time = h44.sample_times[-1]
     h44_slice = h44.time_slice(start_time, end_time)
@@ -277,7 +303,7 @@ def gen_nrsur_linearqnm(**kwds):
         qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
         sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
-        qnm[m].data = A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - start_time) )
+        qnm[m].data = A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) )
         h44_slice -= tgr * qnm[m]
 
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
