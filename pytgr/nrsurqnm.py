@@ -203,7 +203,7 @@ def get_qnmpar(qnm_modes, **kwds):
             raise ValueError("Invalid mode format in rindown_mode")
     return qnm_par
 
-QUADRATIC_MODES = ['220220', '220221','221221']
+QUADRATIC_MODES = ['220220', '220221','221221','220222','221222','222222']
 _interpolation_cache = {}
 
 for mode in QUADRATIC_MODES:
@@ -244,27 +244,31 @@ def gen_nrsur_linearqnm(**kwds):
             h += h_modes * Y_lm
 
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
-    qnm_par = get_qnmpar(['220','221','222'] + QUADRATIC_MODES, **kwds)
+    mode22 = kwds['mode22']
+    print("Decomposing (2,2) mode into QNMs:", mode22)
+    for m in mode22:
+        print(f"  mode {m}")
+    qnm_par = get_qnmpar(mode22 + QUADRATIC_MODES, **kwds)
     
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
-        A_modes_22, _, _ = qnm_decomposition(['220','221','222'], qnm_par, qnm_start_time, h22, **kwds)
+        A_modes_22, _, _ = qnm_decomposition(mode22, qnm_par, qnm_start_time, h22, **kwds)
     else:
         fit_A_modes_22 = {}
         fit_A_modes_22['220'] = []
         fit_A_modes_22['221'] = []
+        fit_A_modes_22['222'] = []
         for t_fit in np.arange(0.002, 0.00367, 0.0003333):
-            this_A, _, _ = qnm_decomposition(['220','221','222'], qnm_par, t_fit, h22, **kwds)
+            this_A, _, _ = qnm_decomposition(mode22, qnm_par, t_fit, h22, **kwds)
             # shift to qnm_start_time
-            for m in ['220','221']:
+            for m in ['220','221','222']:
                 omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
                 this_A[m] *= np.exp(-1j * omega * (qnm_start_time - t_fit))
-            fit_A_modes_22['220'].append(this_A['220'])
-            fit_A_modes_22['221'].append(this_A['221'])
+                fit_A_modes_22[m].append(this_A[m])
         
         A_modes_22 = {}
-        for m in ['220','221']:
+        for m in ['220','221','222']:
             real_parts = [z.real for z in fit_A_modes_22[m]]
             imag_parts = [z.imag for z in fit_A_modes_22[m]]
             real_mean = np.mean(real_parts)
