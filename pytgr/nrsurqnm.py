@@ -244,7 +244,7 @@ def gen_nrsur_linearqnm(**kwds):
             h += h_modes * Y_lm
 
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
-    mode22 = kwds['mode22']
+    mode22 = kwds['mode22'].split()
     print("Decomposing (2,2) mode into QNMs:", mode22)
     for m in mode22:
         print(f"  mode {m}")
