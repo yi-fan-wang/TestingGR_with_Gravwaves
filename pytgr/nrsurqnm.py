@@ -245,6 +245,7 @@ def gen_nrsur_linearqnm(**kwds):
 
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
     mode22 = kwds['mode22'].split()
+    kwds_quadratic_modes = kwds['mode_quadratic'].split()
     qnm_par = get_qnmpar(mode22 + QUADRATIC_MODES, **kwds)
     
     # construct QNM from (2,2) mode
@@ -278,7 +279,7 @@ def gen_nrsur_linearqnm(**kwds):
             
     # removing quadratic modes
     A_modes_quadratic = {}
-    for mode in QUADRATIC_MODES:
+    for mode in kwds_quadratic_modes:
         load_interp = load_interpolation_function(mode)
         chi_f = qnm_par['final_spin']
         ratio = load_interp(chi_f)
@@ -300,7 +301,7 @@ def gen_nrsur_linearqnm(**kwds):
         tgr = kwds['quadratic_tgr']
     else:
         tgr = 1.0
-    for m in QUADRATIC_MODES:
+    for m in kwds_quadratic_modes:
         qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
         sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
