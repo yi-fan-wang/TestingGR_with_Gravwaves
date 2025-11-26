@@ -305,7 +305,7 @@ def gen_nrsur_linearqnm(**kwds):
         qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
         sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
-        qnm[m].data = A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) )
+        qnm[m].data = -A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) ) # -1 to account for 'm/2 pi + pi' conversion to NRSur
         h44_slice -= tgr * qnm[m]
 
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
