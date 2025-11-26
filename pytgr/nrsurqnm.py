@@ -21,6 +21,7 @@ def gen_nrsurqnm(**kwds):
             h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
             if l==4 and abs(m)==4 and kwds['double_fourfour'] is not None and kwds['double_fourfour']== True:
+                print('doubling 44!!')
                 h += 2 * h_modes * Y_lm
             else:
                 h += h_modes * Y_lm
