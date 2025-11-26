@@ -20,10 +20,13 @@ def gen_nrsurqnm(**kwds):
         for m in range(-1*l, l+1):
             h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
-            if l==4 and abs(m)==4 and kwds['double_fourfour'] is not None and kwds['double_fourfour']== True:
-                print('doubling 44!!')
-                h += 2 * h_modes * Y_lm
+            if l==4 and abs(m)==4 and kwds['double_fourfour'] is not None:
+                print(l,m)
+                print('double_fourfour values:', kwds['double_fourfour'])
+                factor = float(kwds['double_fourfour'])
+                h +=  factor * h_modes * Y_lm
             else:
+                print('You are not doubling 44!!')
                 h += h_modes * Y_lm
     if 'ringdown_mode' not in kwds or kwds['ringdown_mode'] is None:
         return h.real(), -h.imag()
