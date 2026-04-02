@@ -23,7 +23,7 @@ setup (
     #package_dir = {'':'src'},
     #package_dir={'PyTGR': 'src'},
     entry_points = {"pycbc.waveform.fd":["birefringence = pytgr.birefringence:gen_waveform",
-                                         "massivegraviton = pytgr.massivegraviton:gen_waveform",
+                                         "massive_graviton = pytgr.massive_graviton:gen_mg_waveform",
                                          "fta = pytgr.fta:gen_waveform",
                                          "ppe = pytgr.ppe:gen_waveform",
                                          "lsa = pytgr.lineofsight:gen_waveform"
@@ -35,7 +35,7 @@ setup (
                                          "NRSur7dq4_tdtaper = pytgr.nrsurqnm:gen_nrsur7dq4_tdtaper"
                                          ],
                     "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
-		    			                     "massivegraviton = pytgr:length_in_time",
+		    			                     "massive_graviton = pytgr:length_in_time",
 					                         "fta = pytgr:length_in_time",
                                              "ppe = pytgr:length_in_time",
                                              "lsa = pytgr:length_in_time"]},
