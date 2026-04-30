@@ -251,14 +251,14 @@ def gen_nrsur_linearqnm(**kwds):
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
-        A_modes_22, _, _ = qnm_decomposition(mode22, qnm_par, qnm_start_time, h22, **kwds)
+        A_modes_22, _, _ = qnm_decomposition(mode22, qnm_par, qnm_start_time, h22)
     else:
         fit_A_modes_22 = {}
         fit_A_modes_22['220'] = []
         fit_A_modes_22['221'] = []
         fit_A_modes_22['222'] = []
         for t_fit in np.arange(0.002, 0.00367, 0.0003333):
-            this_A, _, _ = qnm_decomposition(mode22, qnm_par, t_fit, h22, **kwds)
+            this_A, _, _ = qnm_decomposition(mode22, qnm_par, t_fit, h22)
             # shift to qnm_start_time
             for m in ['220','221','222']:
                 omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
@@ -308,8 +308,14 @@ def gen_nrsur_linearqnm(**kwds):
         qnm[m].data = -A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) ) # -1 to account for 'm/2 pi + pi' conversion to NRSur
         h44_slice -= tgr * qnm[m]
 
+    sum_quad6 = sum(qnm[m] for m in kwds_quadratic_modes)
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
     Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)
-    qnm44 = h44_slice *  Y_44 + np.conj(h44_slice) * Y_4m4
-    h.data[start_idx:start_idx+len(qnm44)] += qnm44
-    return h.real(), -h.imag()
+    sum_quad6_polarization = sum_quad6 *  Y_44 + np.conj(sum_quad6) * Y_4m4
+    return sum_quad6_polarization.real(), -sum_quad6_polarization.imag()
+
+    #Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
+    #Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)
+    #qnm44 = h44_slice *  Y_44 + np.conj(h44_slice) * Y_4m4
+    #h.data[start_idx:start_idx+len(qnm44)] += qnm44
+    #return h.real(), -h.imag()
