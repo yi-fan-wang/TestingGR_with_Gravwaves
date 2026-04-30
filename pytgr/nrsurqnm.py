@@ -251,14 +251,14 @@ def gen_nrsur_linearqnm(**kwds):
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
-        A_modes_22, _, _ = qnm_decomposition(mode22, qnm_par, qnm_start_time, h22, **kwds)
+        A_modes_22, _, _ = qnm_decomposition(mode22, qnm_par, qnm_start_time, h22)
     else:
         fit_A_modes_22 = {}
         fit_A_modes_22['220'] = []
         fit_A_modes_22['221'] = []
         fit_A_modes_22['222'] = []
         for t_fit in np.arange(0.002, 0.00367, 0.0003333):
-            this_A, _, _ = qnm_decomposition(mode22, qnm_par, t_fit, h22, **kwds)
+            this_A, _, _ = qnm_decomposition(mode22, qnm_par, t_fit, h22)
             # shift to qnm_start_time
             for m in ['220','221','222']:
                 omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
