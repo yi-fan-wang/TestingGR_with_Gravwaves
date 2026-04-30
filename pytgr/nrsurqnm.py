@@ -14,13 +14,13 @@ def gen_nrsurqnm(**kwds):
                             distance = kwds['distance'],
                             delta_t=kwds['delta_t'], f_lower=kwds['f_lower'],
                             mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
-    
+
     h = 0
     for l in range(2,5):
         for m in range(-1*l, l+1):
             if l==4 and abs(m)==4:
                 continue # skip 44 mode for ringdown treatment later
-            h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
+            h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1]
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
             h += h_modes * Y_lm
     if 'ringdown_mode' not in kwds or kwds['ringdown_mode'] is None:
@@ -42,7 +42,7 @@ def gen_nrsurqnm(**kwds):
             l = int(mode[0])
             m = int(mode[1])
             n = int(mode[2])
-            qnm_par['freq'][mode], qnm_par['tau'][mode] = get_lm_f0tau(qnm_par['final_mass'], 
+            qnm_par['freq'][mode], qnm_par['tau'][mode] = get_lm_f0tau(qnm_par['final_mass'],
                                                                          qnm_par['final_spin'],
                                                                          l,m,n)
         elif len(mode) == 6:
@@ -97,7 +97,7 @@ def gen_nrsurqnm(**kwds):
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
     Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)
     qnm44 = allqnm *  Y_44 + np.conj(allqnm) * Y_4m4
-	
+
     h.data[start_idx:start_idx+len(qnm44)] += qnm44
     #print(qnm44.data)
     return h.real(), -h.imag()
@@ -122,7 +122,7 @@ def gen_nrsur7dq4_tdtaper(**kwds):
     return hp_taper, hc_taper
 
 
-def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target, **kwds):
+def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target):
     '''
     Decompose the target waveform h_target into the given QNM modes starting from ringdown_start_time
     '''
@@ -224,7 +224,7 @@ def gen_nrsur_linearqnm(**kwds):
     '''
     Generate a NRSur7dq4 waveform with linear QNM in 44 mode by removing the quadratic modes
     '''
-    hlm = get_td_waveform_modes(approximant='NRSur7dq4', 
+    hlm = get_td_waveform_modes(approximant='NRSur7dq4',
                                 mass1=kwds['mass1'], mass2=kwds['mass2'],
                                 spin1x=kwds['spin1x'], spin1y=kwds['spin1y'], spin1z=kwds['spin1z'],
                                 spin2x=kwds['spin2x'], spin2y=kwds['spin2y'], spin2z=kwds['spin2z'],
@@ -233,13 +233,13 @@ def gen_nrsur_linearqnm(**kwds):
                                 f_lower=kwds['f_lower'],
                                 f_ref=kwds['f_ref'],
                                 mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
-    
+
     h = 0
     for l in range(2,5):
         for m in range(-1*l, l+1):
             if l==4 and abs(m)==4:
                 continue # skip 44 mode for ringdown treatment later
-            h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1] 
+            h_modes = hlm[(l,m)][0] + 1j * hlm[(l,m)][1]
             Y_lm = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, l, m)
             h += h_modes * Y_lm
 

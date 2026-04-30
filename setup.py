@@ -2,7 +2,7 @@
 setup.py file for testing birefringence pycbc waveform plugin package
 """
 
-from setuptools import Extension, setup, Command, find_packages
+from setuptools import setup, find_packages
 
 VERSION = '0.2'
 
