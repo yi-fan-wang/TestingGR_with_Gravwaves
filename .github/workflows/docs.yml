@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - doc
     paths:
       - ".github/workflows/docs.yml"
       - "docs/**"
@@ -43,7 +44,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
       - name: Install documentation dependencies
         run: |
@@ -57,13 +57,13 @@ jobs:
         run: python -m sphinx -b html docs docs/_build/html
 
       - name: Upload GitHub Pages artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
   deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/master') }}
     needs: build
     runs-on: ubuntu-latest
     environment:
