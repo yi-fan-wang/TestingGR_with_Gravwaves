@@ -1,10 +1,10 @@
 """
-setup.py file for testing birefringence pycbc waveform plugin package
+setup.py file for testing general relativity pycbc waveform plugin package
 """
 
 from setuptools import setup, find_packages
 
-VERSION = '0.2'
+VERSION = '1.0.0'
 
 setup (
     name = 'PyTGR',
@@ -15,7 +15,7 @@ setup (
     url = 'https://github.com/yi-fan-wang/TestingGR_with_Gravwaves',
     keywords = ['testing general relativity', 'gravitational waves', 'pycbc'],
     packages = find_packages(),
-    package_data={  
+    package_data={
         'pytgr': ['data/*.npy'],
     },
     include_package_data=True,
@@ -28,7 +28,7 @@ setup (
                     "pycbc.waveform.td":["nrsxs = pytgr.nr:gen_sxs_waveform",
                                          "lvcnr = pytgr.nr:gen_lvcnr_waveform",
                                          "NRSur7dq4QNM = pytgr.nrsurqnm:gen_nrsurqnm",
-                                         "NRSur7dq4_quadratic = pytgr.nrsurqnm:gen_nrsur_linearqnm",
+                                         "NRSur7dq4_remove_qqnm = pytgr.nrsurqnm:gen_nrsur_remove_qqnm",
                                          "NRSur7dq4_tdtaper = pytgr.nrsurqnm:gen_nrsur7dq4_tdtaper"
                                          ],
                     "pycbc.waveform.length":["birefringence = pytgr:length_in_time",
