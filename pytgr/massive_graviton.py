@@ -101,10 +101,10 @@ def gen_mg_waveform(**kwds):
     Parameters
     ----------
     kwds : dict
-        Must contain:
-            baseapprox : str        GR approximant name
-            mg : float              graviton mass in eV/c^2
-            distance : float        luminosity distance in Mpc
+        Must contain ``base_gr_approximant`` for the GR approximant name,
+        ``mg`` for the graviton mass in eV/c^2, and ``distance`` for the
+        luminosity distance in Mpc.
+
         Other parameters (masses, spins, etc.) passed to get_fd_waveform.
 
     Returns
