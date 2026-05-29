@@ -171,6 +171,15 @@ def qnm_decomposition(qnm_modes, qnm_par, ringdown_start_time, h_target):
     return A_modes, allqnm, h_target_slice
 
 def get_qnmpar(qnm_modes, **kwds):
+    '''Get the QNM parameters (frequency and damping time) for the given modes based on
+    the remnant black hole properties predicted by NRSur7dq4. The remnant properties are
+    calculated from the initial binary parameters using NRSur7dq4 fits.
+
+    The input kwds should contain the initial binary parameters and f_ref for NRSur7dq4.
+    The qnm_modes should be a list of mode labels, e.g. ["220","221"] for linear modes,
+    or ["220220", "220221"] for quadratic modes.
+
+    '''
     qnm_par = {}
     qnm_par['final_mass'], qnm_par['final_spin'] = \
         get_final_from_initial(kwds['mass1'], kwds['mass2'],
@@ -220,9 +229,20 @@ def load_interpolation_function(label):
     """
     return _interpolation_cache[label]
 
-def gen_nrsur_linearqnm(**kwds):
+def gen_nrsur_remove_qqnm(**kwds):
     '''
-    Generate a NRSur7dq4 waveform with linear QNM in 44 mode by removing the quadratic modes
+    Generate a NRSur7dq4 waveform with quadratic modes being removed from (4,4) mode.
+    The quadratic modes are constructed from (2,2) mode with amplitude ratio from theory predictions.
+    The ringdown part of (4,4) mode is then replaced by the residual after subtracting the quadratic modes.
+
+    kwds should contain:
+    - mass1, mass2, spin1x, spin1y, spin1z, spin2x, spin2y, spin2z, distance, delta_t, f_lower, f_ref, inclination, coa_phase,
+    - mode22: the overtone mode used for quadratic mode),
+    - mode_quadratic: the list of quadratic modes to be removed, e.g. "220220 220221"
+    - toffset: the start time for ringdown treatment, e.g. 0.002
+    - quadratic_tgr: the deviation parameter for quadratic modes, e.g. 0. Optional
+    - qqnm_deltaf: the fractional deviation in frequency for the nonGR quadratic modes, e.g. 0. Optional
+    - qqnm_deltatau: the fractional deviation in damping time for the nonGR quadratic modes, e.g. 0. Optional
     '''
     hlm = get_td_waveform_modes(approximant='NRSur7dq4',
                                 mass1=kwds['mass1'], mass2=kwds['mass2'],
@@ -247,7 +267,7 @@ def gen_nrsur_linearqnm(**kwds):
     mode22 = kwds['mode22'].split()
     kwds_quadratic_modes = kwds['mode_quadratic'].split()
     qnm_par = get_qnmpar(mode22 + QUADRATIC_MODES, **kwds)
-    
+
     # construct QNM from (2,2) mode
     qnm_start_time = kwds['toffset']
     if qnm_start_time >= 0.002:
@@ -264,7 +284,7 @@ def gen_nrsur_linearqnm(**kwds):
                 omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
                 this_A[m] *= np.exp(-1j * omega * (qnm_start_time - t_fit))
                 fit_A_modes_22[m].append(this_A[m])
-        
+
         A_modes_22 = {}
         for m in ['220','221','222']:
             real_parts = [z.real for z in fit_A_modes_22[m]]
@@ -276,8 +296,8 @@ def gen_nrsur_linearqnm(**kwds):
             real_samples = np.random.normal(real_mean, real_std, 1)
             imag_samples = np.random.normal(imag_mean, imag_std, 1)
             A_modes_22[m] = real_samples + 1j * imag_samples
-            
-    # removing quadratic modes
+
+    # getting quadratic modes amplitude
     A_modes_quadratic = {}
     for mode in kwds_quadratic_modes:
         load_interp = load_interpolation_function(mode)
@@ -297,19 +317,47 @@ def gen_nrsur_linearqnm(**kwds):
     N = len(h44_slice)
 
     qnm = {}
+    qnm_nongr_freqtau = {}
+
+    # testingGR amplitude
     if 'quadratic_tgr' in kwds and kwds['quadratic_tgr'] is not None:
-        tgr = kwds['quadratic_tgr']
+        tgr_amplitude = kwds['quadratic_tgr']
     else:
-        tgr = 1.0
+        tgr_amplitude = 1.0
+
+    # testingGR frequency and damping time
+    has_freqtau_tgr = (
+        ('qqnm_deltaf' in kwds and kwds['qqnm_deltaf'] is not None)
+        or ('qqnm_deltatau' in kwds and kwds['qqnm_deltatau'] is not None)
+    )
+    qqnm_deltaf = kwds.get('qqnm_deltaf')
+    qqnm_deltatau = kwds.get('qqnm_deltatau')
+    if qqnm_deltaf is None:
+        qqnm_deltaf = 0.0
+    if qqnm_deltatau is None:
+        qqnm_deltatau = 0.0
+
     for m in kwds_quadratic_modes:
+        # QQNM waveform
         qnm[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
         sample_times = qnm[m].sample_times.numpy()
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
         qnm[m].data = -A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) ) # -1 to account for 'm/2 pi + pi' conversion to NRSur
-        h44_slice -= tgr * qnm[m]
+        # Subtract the quadratic mode contribution from (4,4) mode
+        h44_slice -= tgr_amplitude * qnm[m]
 
+        # Add the quadratic mode with nonGR frequency and damping time
+        if has_freqtau_tgr:
+            qnm_nongr_freqtau[m] = TimeSeries(zeros(N, dtype=complex64), delta_t=h44.delta_t, epoch = start_time)
+            qqnm_nongr_f = qnm_par['freq'][m] * (1 + qqnm_deltaf)
+            qqnm_nongr_tau = qnm_par['tau'][m] * (1 + qqnm_deltatau)
+            omega_nongr = 2 * np.pi * qqnm_nongr_f - 1j / qqnm_nongr_tau
+            qnm_nongr_freqtau[m].data = -A_modes_quadratic[m] * np.exp(-1j * omega_nongr * (sample_times - qnm_start_time) )
+            h44_slice += qnm_nongr_freqtau[m]
+
+    # add the residual (4,4) mode back to the waveform
     Y_44 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, 4)
     Y_4m4 = lal.SpinWeightedSphericalHarmonic(kwds['inclination'], np.pi/2 - kwds['coa_phase'], -2, 4, -4)
-    qnm44 = h44_slice *  Y_44 + np.conj(h44_slice) * Y_4m4
-    h.data[start_idx:start_idx+len(qnm44)] += qnm44
+    pol44 = h44_slice *  Y_44 + np.conj(h44_slice) * Y_4m4
+    h.data[start_idx:start_idx+len(pol44)] += pol44
     return h.real(), -h.imag()
