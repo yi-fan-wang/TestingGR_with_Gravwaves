@@ -1,3 +1,5 @@
+import numpy
+
 
 def gen_waveform(**kwds):
     '''
@@ -17,7 +19,6 @@ def gen_waveform(**kwds):
     '''
     from pycbc.waveform import get_fd_waveform
     from ._utils import pop_base_gr_approximant, strip_plugin_approximant
-    import numpy
 
     # sanity checks
     base_gr_approximant = pop_base_gr_approximant(kwds)
