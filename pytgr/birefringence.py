@@ -16,13 +16,12 @@ def gen_waveform(**kwds):
     from pycbc import cosmology
     import lal
     from scipy import integrate
+    from ._utils import pop_base_gr_approximant, strip_plugin_approximant
 
-    if 'approximant' in kwds:
-        kwds.pop("approximant")
-    if kwds['baseapprox'] is None:
-        raise ValueError("A base waveform approximant is required.")
+    strip_plugin_approximant(kwds)
+    base_gr_approximant = pop_base_gr_approximant(kwds)
 
-    hp, hc = get_fd_waveform(approximant=kwds['baseapprox'], **kwds)
+    hp, hc = get_fd_waveform(approximant=base_gr_approximant, **kwds)
     zz = cosmology.redshift(kwds['distance'])
     intz = integrate.quad(integrand, 0, zz)[0]
 

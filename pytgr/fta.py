@@ -19,15 +19,14 @@ def gen_waveform(**kwds):
     '''
     from pycbc.waveform import get_fd_waveform
     from pycbc.types import FrequencySeries
+    from ._utils import pop_base_gr_approximant, strip_plugin_approximant
     import lal, lalsimulation as lalsim
 
     # sanity checks
-    if kwds['baseapprox'] is None:
-        raise ValueError("A base waveform approximant is required.")
+    base_gr_approximant = pop_base_gr_approximant(kwds)
     # Generate GR waveforms
-    if 'approximant' in kwds:
-        kwds.pop("approximant")
-    hp, hc = get_fd_waveform(approximant=kwds['baseapprox'], **kwds)
+    strip_plugin_approximant(kwds)
+    hp, hc = get_fd_waveform(approximant=base_gr_approximant, **kwds)
 
     nonGRdict = lal.CreateDict()
     if kwds['ftadchi2'] != None:

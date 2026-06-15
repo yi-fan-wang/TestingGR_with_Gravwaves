@@ -2,15 +2,14 @@ def gen_waveform(**kwds):
     from pycbc.waveform import get_fd_waveform
     import lal, numpy
     from pycbc import conversions
+    from ._utils import pop_base_gr_approximant, strip_plugin_approximant
 
-    if 'approximant' in kwds:
-        kwds.pop("approximant")
-    if kwds['baseapprox'] is None:
-        raise ValueError("A base waveform approximant is required.")
+    strip_plugin_approximant(kwds)
+    base_gr_approximant = pop_base_gr_approximant(kwds)
     if kwds['lsa_a'] is None:
         raise ValueError("A line of sight acceleration parameter is required!")
 
-    hp, hc = get_fd_waveform(approximant=kwds['baseapprox'], **kwds)
+    hp, hc = get_fd_waveform(approximant=base_gr_approximant, **kwds)
     fseries = hp.sample_frequencies 
 
     eta = conversions.eta_from_mass1_mass2(kwds['mass1'],kwds['mass2'])
