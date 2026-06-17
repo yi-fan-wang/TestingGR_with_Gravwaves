@@ -240,7 +240,8 @@ def gen_nrsur_remove_qqnm(**kwds):
     - mode22: the overtone mode used for quadratic mode),
     - mode_quadratic: the list of quadratic modes to be removed, e.g. "220220 220221"
     - toffset: the start time for ringdown treatment, e.g. 0.002
-    - quadratic_tgr: the deviation parameter for quadratic modes, e.g. 0. Optional
+    - quadratic_tgr: the amplitude deviation parameter for quadratic modes, e.g. 0. Optional
+    - quadratic_tgr_phase: the phase deviation (in radians) for quadratic modes, e.g. 0. Optional
     - qqnm_deltaf: the fractional deviation in frequency for the nonGR quadratic modes, e.g. 0. Optional
     - qqnm_deltatau: the fractional deviation in damping time for the nonGR quadratic modes, e.g. 0. Optional
     '''
@@ -325,6 +326,15 @@ def gen_nrsur_remove_qqnm(**kwds):
     else:
         tgr_amplitude = 1.0
 
+    # testingGR phase (in radians); GR value is 0
+    if 'quadratic_tgr_phase' in kwds and kwds['quadratic_tgr_phase'] is not None:
+        tgr_phase = kwds['quadratic_tgr_phase']
+    else:
+        tgr_phase = 0.0
+
+    # complex deviation factor: amplitude rescaling and phase shift
+    tgr_factor = tgr_amplitude * np.exp(1j * tgr_phase)
+
     # testingGR frequency and damping time
     has_freqtau_tgr = (
         ('qqnm_deltaf' in kwds and kwds['qqnm_deltaf'] is not None)
@@ -344,7 +354,7 @@ def gen_nrsur_remove_qqnm(**kwds):
         omega = 2 * np.pi * qnm_par['freq'][m] - 1j / qnm_par['tau'][m]
         qnm[m].data = -A_modes_quadratic[m] * np.exp(-1j * omega * (sample_times - qnm_start_time) ) # -1 to account for 'm/2 pi + pi' conversion to NRSur
         # Subtract the quadratic mode contribution from (4,4) mode
-        h44_slice -= tgr_amplitude * qnm[m]
+        h44_slice -= tgr_factor * qnm[m]
 
         # Add the quadratic mode with nonGR frequency and damping time
         if has_freqtau_tgr:
