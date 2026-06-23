@@ -1,15 +1,43 @@
 import math
 import unittest
 
-import astropy.units as u
 import numpy as np
-from astropy.cosmology import FlatLambdaCDM, z_at_value
-from scipy import constants
-from scipy.integrate import quad
+try:
+    import astropy.units as u
+    from astropy.cosmology import FlatLambdaCDM, z_at_value
+    from scipy import constants
+    from scipy.integrate import quad
+except ModuleNotFoundError:
+    u = None
+    FlatLambdaCDM = None
+    z_at_value = None
+    constants = None
+    quad = None
 
-from pytgr.massive_graviton import effective_distance, mg_phase_correction, mg_to_lambda_g
+try:
+    from pytgr.massive_graviton import effective_distance, mg_phase_correction, mg_to_lambda_g
+except ModuleNotFoundError:
+    effective_distance = None
+    mg_phase_correction = None
+    mg_to_lambda_g = None
 
 
+@unittest.skipUnless(
+    all(
+        dependency is not None
+        for dependency in (
+            u,
+            FlatLambdaCDM,
+            z_at_value,
+            constants,
+            quad,
+            effective_distance,
+            mg_phase_correction,
+            mg_to_lambda_g,
+        )
+    ),
+    "requires astropy and scipy",
+)
 class MassiveGravitonFormulaTests(unittest.TestCase):
     def test_effective_distance_matches_will_eds_limit(self):
         cosmo = FlatLambdaCDM(H0=67.4, Om0=1.0, Tcmb0=0.0)
