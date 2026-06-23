@@ -12,7 +12,13 @@ Therefore, to test General Relativity, it's crucial to build beyond-General-Rela
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Waveform models:
+
+   nrsurqnm
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API reference:
 
    modules
 
