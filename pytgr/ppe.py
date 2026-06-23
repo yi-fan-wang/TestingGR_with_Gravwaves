@@ -1,6 +1,5 @@
 import re
 import numpy
-from pycbc import conversions
 
 MTSUN_SI = 4.925490947e-6
 _PPE_BETA_RE = re.compile(r"^ppebeta(-?\d+)$")
@@ -72,6 +71,8 @@ def gen_ppe_waveform(**kwds):
     ppe_beta_terms = _extract_ppe_beta_terms(kwds)
     chirp_mass_seconds = None
     if ppe_beta_terms:
+        from pycbc import conversions
+
         chirp_mass_seconds = conversions.mchirp_from_mass1_mass2(
             kwds["mass1"], kwds["mass2"]
         )

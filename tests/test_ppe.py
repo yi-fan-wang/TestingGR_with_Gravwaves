@@ -3,14 +3,26 @@ import os
 import unittest
 
 import numpy as np
-from pycbc import conversions
+try:
+    from pycbc import conversions
+    from pycbc.waveform import get_fd_waveform
+except ModuleNotFoundError:
+    conversions = None
+    get_fd_waveform = None
 
-from pytgr import ppe
+try:
+    from pytgr import ppe
+except ImportError:
+    ppe = None
 
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-pytgr-tests")
 
 
+@unittest.skipUnless(
+    all(dependency is not None for dependency in (conversions, get_fd_waveform, ppe)),
+    "requires pycbc",
+)
 class PpePhaseTests(unittest.TestCase):
     def test_ppe_beta_exponent_matches_pn_index(self):
         self.assertAlmostEqual(ppe.ppe_beta_exponent(1), -4.0 / 3.0)
@@ -36,8 +48,6 @@ class PpePhaseTests(unittest.TestCase):
         self.assertAlmostEqual(actual, expected)
 
     def test_ppebeta2_waveform_ratio_matches_beta_over_u(self):
-        from pycbc.waveform import get_fd_waveform
-
         beta2 = 1e-3
         kwargs = dict(
             approximant="ppe",

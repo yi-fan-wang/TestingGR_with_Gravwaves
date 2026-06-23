@@ -24,14 +24,23 @@ class BaseGRApproximantTests(unittest.TestCase):
         calls = []
         pycbc = types.ModuleType("pycbc")
         waveform = types.ModuleType("pycbc.waveform")
+        conversions = types.ModuleType("pycbc.conversions")
 
         def get_fd_waveform(**kwargs):
             calls.append(kwargs.copy())
             return _WaveformStub(), _WaveformStub()
 
         waveform.get_fd_waveform = get_fd_waveform
+        conversions.mchirp_from_mass1_mass2 = lambda m1, m2: 1.0
 
-        with patch.dict(sys.modules, {"pycbc": pycbc, "pycbc.waveform": waveform}):
+        with patch.dict(
+            sys.modules,
+            {
+                "pycbc": pycbc,
+                "pycbc.waveform": waveform,
+                "pycbc.conversions": conversions,
+            },
+        ):
             from pytgr import ppe
 
             hp, hc = ppe.gen_ppe_waveform(
