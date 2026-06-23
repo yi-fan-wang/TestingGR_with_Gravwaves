@@ -22,7 +22,7 @@ setup (
     entry_points = {"pycbc.waveform.fd":["birefringence = pytgr.birefringence:gen_waveform",
                                          "massive_graviton = pytgr.massive_graviton:gen_mg_waveform",
                                          "fta = pytgr.fta:gen_waveform",
-                                         "ppe = pytgr.ppe:gen_waveform",
+                                         "ppe = pytgr.ppe:gen_ppe_waveform",
                                          "lsa = pytgr.lineofsight:gen_waveform"
                                          ],
                     "pycbc.waveform.td":["nrsxs = pytgr.nr:gen_sxs_waveform",

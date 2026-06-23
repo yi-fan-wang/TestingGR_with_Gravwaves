@@ -38,7 +38,20 @@ def lambda_g_to_mg(lambda_g):
     lambda_g_m = lambda_g * 1000 # convert from km to m
     return h_eV_s / (lambda_g_m / scipy.constants.c)
 
-def effective_distance(luminosity_distance):
+def _get_cosmology(cosmology=None, **kwargs):
+    return pycbc.cosmology.get_cosmology(cosmology=cosmology, **kwargs)
+
+
+def _effective_distance_from_redshift(z, cosmo):
+    def integrand(zp):
+        return 1.0 / ((1.0 + zp)**2 * cosmo.efunc(zp))
+
+    integral, _ = quad(integrand, 0, z)
+    c_km_s = scipy.constants.c / 1000.0
+    return c_km_s * (1.0 + z) / cosmo.H0.value * integral
+
+
+def effective_distance(luminosity_distance, cosmology=None, **kwargs):
     '''
     Calculate effective distance D_eff for massive graviton phase correction.
     D_eff = (1+z) * c / H0 * integral_0^z dz' / ((1+z')^2 * E(z'))
@@ -53,21 +66,11 @@ def effective_distance(luminosity_distance):
     deff : float
         Effective distance in Mpc
     '''
-    Omega_M = 0.315
-    Omega_Lambda = 0.685
-    H0 = 67.4  # km/s/Mpc
-    H0_m = H0 * 1000  # convert to m/s/Mpc
-    z = pycbc.cosmology.redshift(luminosity_distance)
+    cosmo = _get_cosmology(cosmology=cosmology, **kwargs)
+    z = pycbc.cosmology.redshift(luminosity_distance, cosmology=cosmo)
+    return _effective_distance_from_redshift(z, cosmo)
 
-    def integrand(zp):
-        E = np.sqrt(Omega_M * (1+zp)**3 + Omega_Lambda)
-        return 1.0 / ((1+zp)**2 * E)
-
-    integral, _ = quad(integrand, 0, z)
-    deff = scipy.constants.c * (1 + z) / H0_m * integral # in Mpc
-    return deff
-
-def mg_phase_correction(mg, distance, frequencies):
+def mg_phase_correction(mg, distance, frequencies, cosmology=None, **kwargs):
     '''
     Calculate the massive graviton phase correction for given frequencies.
     delta_phi = -pi * D_eff * c^3 * m_g^2 / h^2 / (1 + z) / f
@@ -86,8 +89,9 @@ def mg_phase_correction(mg, distance, frequencies):
     delta_phi : array-like
         Phase correction for each frequency in radians
     '''
-    z = pycbc.cosmology.redshift(distance)
-    deff = effective_distance(distance) * 1e6 * scipy.constants.parsec # in unit of m
+    cosmo = _get_cosmology(cosmology=cosmology, **kwargs)
+    z = pycbc.cosmology.redshift(distance, cosmology=cosmo)
+    deff = _effective_distance_from_redshift(z, cosmo) * 1e6 * scipy.constants.parsec # in unit of m
     c = scipy.constants.speed_of_light
     h_eV_s, _, _ = scipy.constants.physical_constants['Planck constant in eV/Hz']
     delta_phi = - np.pi * deff * mg**2 / c / h_eV_s**2 / (1 + z) / frequencies
