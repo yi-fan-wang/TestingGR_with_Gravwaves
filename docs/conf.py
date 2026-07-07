@@ -44,6 +44,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.mathjax',
 ]
 
 autodoc_mock_imports = [
