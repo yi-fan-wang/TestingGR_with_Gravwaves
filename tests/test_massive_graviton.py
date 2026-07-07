@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     quad = None
 
 try:
-    from pytgr.massive_graviton import effective_distance, mg_phase_correction, mg_to_lambda_g
+    from tgr.massive_graviton import effective_distance, mg_phase_correction, mg_to_lambda_g
 except ModuleNotFoundError:
     effective_distance = None
     mg_phase_correction = None

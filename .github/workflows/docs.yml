@@ -8,13 +8,13 @@ on:
     paths:
       - ".github/workflows/docs.yml"
       - "docs/**"
-      - "pytgr/**"
+      - "tgr/**"
       - "setup.py"
   pull_request:
     paths:
       - ".github/workflows/docs.yml"
       - "docs/**"
-      - "pytgr/**"
+      - "tgr/**"
       - "setup.py"
   workflow_dispatch:
 

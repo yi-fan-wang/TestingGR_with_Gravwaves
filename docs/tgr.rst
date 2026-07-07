@@ -1,69 +1,69 @@
-pytgr package
+tgr package
 =============
 
 Submodules
 ----------
 
-pytgr.birefringence module
+tgr.birefringence module
 --------------------------
 
-.. automodule:: pytgr.birefringence
+.. automodule:: tgr.birefringence
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.dipole module
+tgr.dipole module
 -------------------
 
-.. automodule:: pytgr.dipole
+.. automodule:: tgr.dipole
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.fta module
+tgr.fta module
 ----------------
 
-.. automodule:: pytgr.fta
+.. automodule:: tgr.fta
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.lineofsight module
+tgr.lineofsight module
 ------------------------
 
-.. automodule:: pytgr.lineofsight
+.. automodule:: tgr.lineofsight
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.massive\_graviton module
+tgr.massive\_graviton module
 ------------------------------
 
-.. automodule:: pytgr.massive_graviton
+.. automodule:: tgr.massive_graviton
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.nr module
+tgr.nr module
 ---------------
 
-.. automodule:: pytgr.nr
+.. automodule:: tgr.nr
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.nrsurqnm module
+tgr.nrsurqnm module
 ---------------------
 
-.. automodule:: pytgr.nrsurqnm
+.. automodule:: tgr.nrsurqnm
    :members:
    :show-inheritance:
    :undoc-members:
 
-pytgr.ppe module
+tgr.ppe module
 ----------------
 
-.. automodule:: pytgr.ppe
+.. automodule:: tgr.ppe
    :members:
    :show-inheritance:
    :undoc-members:
@@ -71,7 +71,7 @@ pytgr.ppe module
 Module contents
 ---------------
 
-.. automodule:: pytgr
+.. automodule:: tgr
    :members:
    :show-inheritance:
    :undoc-members:
