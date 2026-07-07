@@ -1,9 +1,9 @@
 .. _nrsurqnm:
 
-Ringdown and quadratic QNM models (``pytgr.nrsurqnm``)
+Ringdown and quadratic QNM models (``tgr.nrsurqnm``)
 ======================================================
 
-The :mod:`pytgr.nrsurqnm` module builds beyond-GR ringdown waveforms on top of
+The :mod:`tgr.nrsurqnm` module builds beyond-GR ringdown waveforms on top of
 the numerical-relativity surrogate ``NRSur7dq4``. The full inspiral-merger-ringdown
 signal is generated with the surrogate, and the late-time ringdown of selected
 spherical-harmonic modes is then *re-modelled* as a superposition of quasi-normal
@@ -13,7 +13,7 @@ which is exactly what a test of GR requires.
 
 This page describes the physics and the mathematics implemented by the module.
 The auto-generated API reference for every function lives under
-:mod:`pytgr.nrsurqnm` in the :doc:`pytgr` package documentation.
+:mod:`tgr.nrsurqnm` in the :doc:`tgr` package documentation.
 
 Quasi-normal-mode ansatz
 ------------------------
@@ -54,7 +54,7 @@ QNM spectrum of the remnant
 
 The QNM frequencies and damping times are uniquely determined by the mass
 :math:`M_f` and dimensionless spin :math:`\chi_f` of the remnant black hole. The
-helper :func:`pytgr.nrsurqnm.get_qnmpar` first predicts :math:`(M_f, \chi_f)` from
+helper :func:`tgr.nrsurqnm.get_qnmpar` first predicts :math:`(M_f, \chi_f)` from
 the initial binary parameters using the ``NRSur7dq4`` remnant fits, and then maps
 them to :math:`(f_{\ell m n}, \tau_{\ell m n})` for each requested mode.
 
@@ -80,7 +80,7 @@ Least-squares QNM decomposition
 -------------------------------
 
 Given a target waveform :math:`h(t)` and a chosen set of :math:`M` modes,
-:func:`pytgr.nrsurqnm.qnm_decomposition` extracts the complex amplitudes by a
+:func:`tgr.nrsurqnm.qnm_decomposition` extracts the complex amplitudes by a
 linear least-squares fit over the ringdown window
 :math:`t \in [t_0,\, t_0 + T]`, where the window length
 :math:`T = \log(1000)\,\max_k \tau_k` is set by the slowest-decaying mode (i.e. it
@@ -112,7 +112,7 @@ finally rescaled by :math:`\eta` and propagated to the requested reference time
 Replacing the (4,4) ringdown: ``gen_nrsurqnm``
 ----------------------------------------------
 
-:func:`pytgr.nrsurqnm.gen_nrsurqnm` generates the full ``NRSur7dq4`` signal,
+:func:`tgr.nrsurqnm.gen_nrsurqnm` generates the full ``NRSur7dq4`` signal,
 keeps every mode except :math:`(4,\pm 4)`, and reconstructs the
 :math:`(4,4)` ringdown from its QNM decomposition :eq:`normal-eq`. Deviations from
 GR are injected through per-mode fractional amplitude parameters
@@ -131,7 +131,7 @@ spin-weighted spherical harmonics of weight :math:`-2` (see
 Removing quadratic modes: ``gen_nrsur_remove_qqnm``
 ---------------------------------------------------
 
-:func:`pytgr.nrsurqnm.gen_nrsur_remove_qqnm` isolates the contribution of the
+:func:`tgr.nrsurqnm.gen_nrsur_remove_qqnm` isolates the contribution of the
 quadratic modes to the :math:`(4,4)` ringdown so that a GR deviation can be
 applied to them. The amplitude of a quadratic mode is fixed by the amplitudes of
 its two parent linear :math:`(2,2)` modes, a theory-predicted complex ratio
@@ -206,7 +206,7 @@ polarizations returned by every generator,
 Tapered surrogate helper
 ------------------------
 
-For convenience :func:`pytgr.nrsurqnm.gen_nrsur7dq4_tdtaper` returns the plain
+For convenience :func:`tgr.nrsurqnm.gen_nrsur7dq4_tdtaper` returns the plain
 ``NRSur7dq4`` polarizations with a short Tukey-style taper of length ``window``
 (default :math:`0.05\,\mathrm{s}`) applied at the start of the time series to
 suppress turn-on transients.

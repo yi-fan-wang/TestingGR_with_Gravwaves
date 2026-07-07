@@ -1,7 +1,7 @@
-pytgr
+tgr
 =====
 
 .. toctree::
    :maxdepth: 4
 
-   pytgr
+   tgr

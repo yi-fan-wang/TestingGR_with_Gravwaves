@@ -1,2 +1,2 @@
-include pytgr/data/*.npy
-recursive-include pytgr/data *.npy
+include tgr/data/*.npy
+recursive-include tgr/data *.npy

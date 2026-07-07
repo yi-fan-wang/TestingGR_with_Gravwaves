@@ -11,12 +11,12 @@ except ModuleNotFoundError:
     get_fd_waveform = None
 
 try:
-    from pytgr import ppe
+    from tgr import ppe
 except ImportError:
     ppe = None
 
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-pytgr-tests")
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-tgr-tests")
 
 
 @unittest.skipUnless(

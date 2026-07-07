@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyTGR'
+project = 'TGR'
 copyright = '2023, Yifan Wang'
 author = 'Yifan Wang'
 
@@ -116,7 +116,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'PyTGRdoc'
+htmlhelp_basename = 'TGRdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -143,7 +143,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PyTGR.tex', 'PyTGR Documentation',
+    (master_doc, 'TGR.tex', 'TGR Documentation',
      'Yifan Wang', 'manual'),
 ]
 
@@ -153,7 +153,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pycbc-testinggr', 'PyTGR Documentation',
+    (master_doc, 'pycbc-testinggr', 'TGR Documentation',
      [author], 1)
 ]
 
@@ -164,8 +164,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PyTGR', 'PyTGR Documentation',
-     author, 'PyTGR', 'One line description of project.',
+    (master_doc, 'TGR', 'TGR Documentation',
+     author, 'TGR', 'One line description of project.',
      'Miscellaneous'),
 ]
 

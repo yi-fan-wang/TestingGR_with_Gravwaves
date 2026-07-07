@@ -41,7 +41,7 @@ class BaseGRApproximantTests(unittest.TestCase):
                 "pycbc.conversions": conversions,
             },
         ):
-            from pytgr import ppe
+            from tgr import ppe
 
             hp, hc = ppe.gen_ppe_waveform(
                 approximant="ppe",
@@ -65,7 +65,7 @@ class BaseGRApproximantTests(unittest.TestCase):
         waveform.get_fd_waveform = lambda **kwargs: (_WaveformStub(), _WaveformStub())
 
         with patch.dict(sys.modules, {"pycbc": pycbc, "pycbc.waveform": waveform}):
-            from pytgr import ppe
+            from tgr import ppe
 
             with self.assertRaisesRegex(ValueError, "base_gr_approximant"):
                 ppe.gen_ppe_waveform(approximant="ppe")
@@ -90,9 +90,9 @@ class BaseGRApproximantTests(unittest.TestCase):
                 "pycbc.waveform.waveform": waveform_module,
             },
         ):
-            import pytgr
+            import tgr
 
-            length = pytgr.length_in_time(
+            length = tgr.length_in_time(
                 approximant="ppe",
                 base_gr_approximant="SEOBNRv5_ROM",
                 mass1=30,
@@ -104,7 +104,7 @@ class BaseGRApproximantTests(unittest.TestCase):
         self.assertNotIn("base_gr_approximant", calls[0])
 
     def test_plugin_sources_do_not_reference_legacy_base_key(self):
-        package_dir = pathlib.Path(__file__).resolve().parents[1] / "pytgr"
+        package_dir = pathlib.Path(__file__).resolve().parents[1] / "tgr"
         for path in package_dir.glob("*.py"):
             self.assertNotIn("baseapprox", path.read_text())
 

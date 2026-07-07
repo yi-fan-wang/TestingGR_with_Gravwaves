@@ -6,13 +6,13 @@ on:
       - master
     paths:
       - ".github/workflows/tests.yml"
-      - "pytgr/**"
+      - "tgr/**"
       - "tests/**"
       - "setup.py"
   pull_request:
     paths:
       - ".github/workflows/tests.yml"
-      - "pytgr/**"
+      - "tgr/**"
       - "tests/**"
       - "setup.py"
   workflow_dispatch:

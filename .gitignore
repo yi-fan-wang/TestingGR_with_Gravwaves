@@ -1,6 +1,9 @@
-build
+build/
+dist/
 docs/_build/
+docs/doctrees/
+docs/html/
 __pycache__
 .ipynb_checkpoints
-PyTGR.egg-info/
+*.egg-info/
 .DS_Store
