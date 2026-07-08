@@ -49,7 +49,7 @@ Time-domain waveform plugins:
 ## Documentation and Examples
 
 Documentation is available at
-[yi-fan-wang.github.io/TestingGR_with_Gravwaves](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves/html/index.html).
+[yi-fan-wang.github.io/TestingGR_with_Gravwaves](https://yi-fan-wang.github.io/TestingGR_with_Gravwaves).
 Example notebooks and scripts are available in the
 [examples](https://github.com/yi-fan-wang/TestingGR_with_Gravwaves/tree/master/examples)
 directory.
