@@ -190,7 +190,21 @@ def get_qnm_freqtau(qnm_modes, **kwds):
             raise ValueError("Invalid mode format in rindown_mode")
     return QNMTable(final_mass, final_spin, freq, tau)
 
-def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target):
+def _ringdown_fit_window(fit_modes, qnm_par, ringdown_start_time, h_target):
+    '''Slice the ringdown fit window out of h_target. The window starts on the
+    sample grid at the last sample <= ringdown_start_time and lasts
+    max_m(tau_m) * ln(1000), i.e. until the slowest-decaying fitted mode has
+    damped by a factor of 1000.'''
+    t_duration = max(qnm_par.tau[m] for m in fit_modes) * np.log(1000)
+    start_idx = int(np.floor(float(ringdown_start_time - h_target.start_time) * h_target.sample_rate))
+    end_idx = int(float(ringdown_start_time + t_duration - h_target.start_time) * h_target.sample_rate)
+
+    start_time = h_target.sample_times[start_idx]
+    end_time = h_target.sample_times[end_idx]
+    return h_target.time_slice(start_time, end_time)
+
+def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target,
+                            weights=None):
     '''Least-squares fit of a sum of QNMs to a target waveform::
 
         h_target(t) ~ sum_m A_m exp[-i omega_m (t - t0)]
@@ -216,6 +230,14 @@ def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target):
         Internally the templates are rescaled with a factor of 1e-22 to
         keep the normal equations well conditioned for GW strain scale
         data; this factor is undone in the returned amplitudes.
+    weights : array of float, optional
+        Positive per-sample weights w_j = 1 / [eps(t_j)^2 + sigma(t_j)^2]
+        over the fit window (same length as the window), where eps is the
+        numerical noise level of the data and sigma the model-error
+        envelope. The fit then minimizes sum_j w_j |h(t_j) - d(t_j)|^2
+        instead of the unweighted residual. Weights are normalized by
+        their median internally, so only their relative size matters.
+        Default None (ordinary least squares).
 
     Returns
     -------
@@ -233,13 +255,8 @@ def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target):
         raise ValueError(f"modes {missing} not found in the QNMTable "
                          f"(available: {qnm_par.modes})")
 
-    t_duration = max(qnm_par.tau[m] for m in fit_modes) * np.log(1000)
-    start_idx = int(np.floor(float(ringdown_start_time - h_target.start_time) * h_target.sample_rate))
-    end_idx = int(float(ringdown_start_time + t_duration - h_target.start_time) * h_target.sample_rate)
-
-    start_time = h_target.sample_times[start_idx]
-    end_time = h_target.sample_times[end_idx]
-    h_target_slice = h_target.time_slice(start_time, end_time)
+    h_target_slice = _ringdown_fit_window(fit_modes, qnm_par, ringdown_start_time, h_target)
+    start_time = float(h_target_slice.start_time)
     N = len(h_target_slice) # number of samples in the fit window
 
     qnm = {}
@@ -253,8 +270,23 @@ def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target):
     G = np.zeros((N, M), dtype=complex) # N by M matrix
     for k, m in enumerate(fit_modes):
         G[:, k] = qnm[m].data
+
+    if weights is None:
+        d = h_target_slice.data
+    else:
+        weights = np.asarray(weights, dtype=float)
+        if weights.shape != (N,):
+            raise ValueError(f"weights must have the same length as the fit "
+                             f"window ({N} samples), got shape {weights.shape}")
+        if np.any(weights <= 0) or not np.all(np.isfinite(weights)):
+            raise ValueError("weights must be positive and finite")
+        # whiten: multiplying rows by sqrt(w) turns the weighted problem
+        # into an ordinary one; median normalization keeps the scale sane
+        sqrt_w = np.sqrt(weights / np.median(weights))
+        G = G * sqrt_w[:, None]
+        d = h_target_slice.data * sqrt_w
     G_H = G.conj().T
-    A = np.linalg.solve(G_H @ G, G_H @ h_target_slice.data)
+    A = np.linalg.solve(G_H @ G, G_H @ d)
 
     A_modes = {}
     sum_fit_qnm = 0
@@ -267,6 +299,101 @@ def least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time, h_target):
             * np.exp(-1j * qnm_par.omega(m) * (ringdown_start_time - start_time))
 
     return A_modes, sum_fit_qnm, h_target_slice
+
+def weighted_least_square_qnmfitting(fit_modes, qnm_par, ringdown_start_time,
+                                     h_target, omitted_modes,
+                                     epsilon_floor=None):
+    '''Weighted least-squares fit of a sum of QNMs to a target waveform.
+
+    Ordinary least squares treats every time sample as equally reliable, but
+    for a noiseless numerical waveform the residual comes from the imperfect
+    QNM model itself (omitted overtones, nonlinear modes, tails), which is
+    largest at early times and decays away. Writing the data as
+    d(t) = h(t) + Delta_h(t) + n(t) with <Delta_h^2> = sigma^2(t) and numerical
+    noise <n^2> = eps^2(t), the statistically sound objective is (Huan Yang,
+    "QNM fitting strategy", Oct 2025)::
+
+        minimize  int_t0^t1  |d(t) - h(t)|^2 / [eps(t)^2 + sigma(t)^2]  dt
+
+    i.e. samples where the fit model is known to be inaccurate are
+    down-weighted. Here sigma(t) is estimated from the QNMs *omitted* from
+    the fit model in two passes:
+
+    1. an ordinary least-squares fit of fit_modes + omitted_modes estimates
+       the omitted-mode amplitudes |A_o| at t0;
+    2. fit_modes alone are refitted with per-sample weights
+       w(t) = 1 / [eps^2 + sum_o |A_o|^2 exp(-2 (t - t0) / tau_o)].
+
+    The omitted modes act only through the weighting envelope; they are not
+    part of the returned fit model.
+
+    Parameters
+    ----------
+    fit_modes : list of str
+        Mode labels to fit, e.g. ['220', '221', '222']
+    qnm_par : QNMTable
+        Must contain both fit_modes and omitted_modes.
+    ringdown_start_time : float
+        Start time t0 of the ringdown model in seconds, as in
+        least_square_qnmfitting.
+    h_target : pycbc TimeSeries
+        Multipole waveform to decompose, e.g. h22 = hlm_real + 1j * hlm_cross.
+    omitted_modes : list of str
+        Modes treated as model error, e.g. ['224'] when fit_modes is
+        ['220', '221', '222', '223']. Typically the next overtone(s) beyond
+        the fitted ones.
+    epsilon_floor : float, optional
+        Numerical-noise level eps of the data, in the same (strain) units as
+        h_target. Bounds the weights at late times, where the omitted-mode
+        envelope has decayed to zero. If None, defaults to 1e-2 of the peak
+        data amplitude in the fit window, the order suggested by envelope
+        floor scans with NRSur7dq4; pass an explicit value if a numerical
+        error estimate (e.g. from an NR convergence test) is available.
+
+    Returns
+    -------
+    A_modes : dict
+        mode label -> complex amplitude A_m referenced to t0 (fit_modes only)
+    sum_fit_qnm : pycbc TimeSeries
+        Best-fit reconstruction over the fit window.
+    h_target_slice : pycbc TimeSeries
+        The slice of h_target used in the fit.
+    wls_info : dict
+        Diagnostics: 'A_omitted' (pass-1 amplitudes of the omitted modes),
+        'sigma' (model-error envelope over the window), 'epsilon_floor'
+        (the floor actually used), 'weights' (the per-sample weights).
+    '''
+    overlap = [m for m in omitted_modes if m in fit_modes]
+    if overlap:
+        raise ValueError(f"omitted_modes {overlap} are already in fit_modes")
+    if not omitted_modes:
+        raise ValueError("omitted_modes must contain at least one mode; "
+                         "use least_square_qnmfitting for an unweighted fit")
+
+    # pass 1: ordinary fit including the omitted modes to scale sigma(t)
+    A_pass1, _, _ = least_square_qnmfitting(list(fit_modes) + list(omitted_modes),
+                                            qnm_par, ringdown_start_time, h_target)
+    A_omitted = {m: A_pass1[m] for m in omitted_modes}
+
+    # model-error envelope on the pass-2 fit window
+    h_target_slice = _ringdown_fit_window(fit_modes, qnm_par, ringdown_start_time, h_target)
+    t = h_target_slice.sample_times.numpy()
+    sigma2 = np.zeros(len(t))
+    for m in omitted_modes:
+        sigma2 += np.abs(A_omitted[m])**2 \
+            * np.exp(-2 * (t - ringdown_start_time) / qnm_par.tau[m])
+
+    if epsilon_floor is None:
+        epsilon_floor = 1e-2 * np.abs(h_target_slice.data).max()
+    weights = 1 / (epsilon_floor**2 + sigma2)
+
+    # pass 2: weighted fit of the requested modes only
+    A_modes, sum_fit_qnm, h_target_slice = least_square_qnmfitting(
+        fit_modes, qnm_par, ringdown_start_time, h_target, weights=weights)
+
+    wls_info = {'A_omitted': A_omitted, 'sigma': np.sqrt(sigma2),
+                'epsilon_floor': epsilon_floor, 'weights': weights}
+    return A_modes, sum_fit_qnm, h_target_slice, wls_info
 
 # earliest start time with a reliable overtone fit
 FIT_TSTART_MIN = 0.002
@@ -317,6 +444,17 @@ def gen_nrsur_remove_qqnm(**kwds):
         fit, may contain more overtones than the quadratic modes need
         (e.g. '220 221 222 223'), the extra overtones only stabilize the fit and
         do not enter the amplitude products.
+    mode22_omitted : str, optional
+        Space-separated overtone labels treated as model error in the parent
+        amplitude fit, e.g. '224' when mode22 = '220 221 222 223'. When given,
+        the parent amplitudes come from weighted_least_square_qnmfitting,
+        which down-weights the early-time samples where the omitted modes
+        still contribute instead of fitting them. Default None (ordinary
+        least squares).
+    wls_epsilon_floor : float, optional
+        Numerical-noise floor of the weighted fit, in strain units; see
+        weighted_least_square_qnmfitting. Only used when mode22_omitted is
+        given.
     mode_quadratic : str
         Space-separated quadratic modes to subtract, e.g. "220220 220221".
         Must be a subset of QUADRATIC_MODES.
@@ -347,6 +485,7 @@ def gen_nrsur_remove_qqnm(**kwds):
     '''
     # requested modes
     fit_mode22 = kwds['mode22'].split()
+    omitted_mode22 = (kwds.get('mode22_omitted') or '').split()
     quadratic_modes = kwds['mode_quadratic'].split()
     unknown = [m for m in quadratic_modes if m not in QUADRATIC_MODES]
     if unknown:
@@ -371,18 +510,28 @@ def gen_nrsur_remove_qqnm(**kwds):
                                 f_ref=kwds['f_ref'],
                                 mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
 
-    qnm_par = get_qnm_freqtau(fit_mode22 + quadratic_modes, **kwds)
+    qnm_par = get_qnm_freqtau(fit_mode22 + omitted_mode22 + quadratic_modes, **kwds)
 
     # parent amplitudes fitted from h22
     t0 = kwds['toffset']
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
     rng = np.random.default_rng(kwds.get('seed'))
+
+    def fit_parent_amplitudes(t_fit):
+        if omitted_mode22:
+            A, _, _, _ = weighted_least_square_qnmfitting(
+                fit_mode22, qnm_par, t_fit, h22, omitted_mode22,
+                epsilon_floor=kwds.get('wls_epsilon_floor'))
+        else:
+            A, _, _ = least_square_qnmfitting(fit_mode22, qnm_par, t_fit, h22)
+        return A
+
     if t0 >= FIT_TSTART_MIN:
-        A_modes_22, _, _ = least_square_qnmfitting(fit_mode22, qnm_par, t0, h22)
+        A_modes_22 = fit_parent_amplitudes(t0)
     else:
         fit_A_modes_22 = {m: [] for m in needed_parents}
         for t_fit in FIT_TSTART_GRID:
-            this_A, _, _ = least_square_qnmfitting(fit_mode22, qnm_par, t_fit, h22)
+            this_A = fit_parent_amplitudes(t_fit)
             # shift to t0
             for m in needed_parents:
                 this_A[m] *= np.exp(-1j * qnm_par.omega(m) * (t0 - t_fit))
