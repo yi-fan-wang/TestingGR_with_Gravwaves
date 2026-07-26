@@ -463,8 +463,15 @@ def gen_nrsur_remove_qqnm(**kwds):
         Ringdown start time t0 in seconds, e.g. 0.002. If toffset >= FIT_TSTART_MIN,
         the parent amplitudes come from a single fit at t0. Otherwise they are
         fitted on a grid of start times (2.0 - 3.67 ms), propagated back to
-        t0, and each amplitude is a Gaussian random draw over the scatter
-        of these fits -- the returned waveform is then stochastic.
+        t0, and combined according to parent_fit_draw.
+    parent_fit_draw : str, optional
+        How to combine the grid of parent-amplitude fits when
+        toffset < FIT_TSTART_MIN. 'gaussian' (default): each amplitude is a
+        Gaussian random draw over the scatter of the grid fits -- the
+        returned waveform is then stochastic. 'mean': each amplitude is the
+        mean of the grid fits -- the waveform is deterministic, but the
+        fit-scatter uncertainty is not propagated. Ignored when
+        toffset >= FIT_TSTART_MIN.
     quadratic_tgr : float, optional
         Amplitude factor of the subtracted GR QQNM: 1 (default) subtracts
         the full GR prediction, 0 subtracts nothing.
@@ -530,6 +537,10 @@ def gen_nrsur_remove_qqnm(**kwds):
     if t0 >= FIT_TSTART_MIN:
         A_modes_22 = fit_parent_amplitudes(t0)
     else:
+        parent_fit_draw = kwds.get('parent_fit_draw') or 'gaussian'
+        if parent_fit_draw not in ('gaussian', 'mean'):
+            raise ValueError(f"parent_fit_draw must be 'gaussian' or 'mean', "
+                             f"got '{parent_fit_draw}'")
         fit_A_modes_22 = {m: [] for m in needed_parents}
         for t_fit in FIT_TSTART_GRID:
             this_A = fit_parent_amplitudes(t_fit)
@@ -542,7 +553,10 @@ def gen_nrsur_remove_qqnm(**kwds):
         for m in needed_parents:
             re = np.real(fit_A_modes_22[m])
             im = np.imag(fit_A_modes_22[m])
-            A_modes_22[m] = rng.normal(re.mean(), re.std()) + 1j * rng.normal(im.mean(), im.std())
+            if parent_fit_draw == 'mean':
+                A_modes_22[m] = re.mean() + 1j * im.mean()
+            else:
+                A_modes_22[m] = rng.normal(re.mean(), re.std()) + 1j * rng.normal(im.mean(), im.std())
 
     # getting quadratic modes amplitude
     A_modes_quadratic = {}
