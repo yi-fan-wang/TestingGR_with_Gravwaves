@@ -400,7 +400,8 @@ FIT_TSTART_MIN = 0.002
 # fit start time grid used when toffset < FIT_TSTART_MIN
 FIT_TSTART_GRID = np.linspace(0.002, 0.0036665, 6)
 
-QUADRATIC_MODES = ['220220', '220221','221221','220222','221222','222222']
+QUADRATIC_MODES = ['220220', '220221','221221','220222','221222','222222',
+                   '220223','221223','222223','223223']
 _interpolation_cache = {}
 
 for mode in QUADRATIC_MODES:
