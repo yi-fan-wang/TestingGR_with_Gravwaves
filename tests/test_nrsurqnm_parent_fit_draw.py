@@ -4,10 +4,11 @@ import numpy as np
 
 try:
     from pycbc.waveform import get_td_waveform
-    from tgr.nrsurqnm import FIT_TSTART_MIN
+    from tgr.nrsurqnm import FIT_TSTART_MIN, _mode_label_list
 except ImportError:
     get_td_waveform = None
     FIT_TSTART_MIN = None
+    _mode_label_list = None
 
 COMMON = dict(
     approximant='NRSur7dq4_remove_qqnm',
@@ -74,6 +75,36 @@ class ParentFitDrawTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             get_td_waveform(toffset=TOFFSET_EARLY,
                             parent_fit_draw='median', **COMMON)
+
+
+@unittest.skipUnless(_mode_label_list is not None, "tgr not available")
+class ModeLabelCoercionTests(unittest.TestCase):
+    # inference config files convert numeric-looking static params to
+    # float, so a single mode label arrives as e.g. 224.0
+    def test_label_list_forms(self):
+        self.assertEqual(_mode_label_list('220 221 222'), ['220', '221', '222'])
+        self.assertEqual(_mode_label_list('224'), ['224'])
+        self.assertEqual(_mode_label_list(224.0), ['224'])
+        self.assertEqual(_mode_label_list(224), ['224'])
+        self.assertEqual(_mode_label_list(None), [])
+        with self.assertRaises(ValueError):
+            _mode_label_list(224.5)
+
+    @unittest.skipUnless(_nrsur_available(),
+                         "pycbc/lal or NRSur7dq4 data not available")
+    def test_float_omitted_matches_string(self):
+        kw = dict(COMMON)
+        kw['mode22_omitted'] = 224.0
+        hp_float, _ = get_td_waveform(toffset=FIT_TSTART_MIN, **kw)
+        hp_str, _ = get_td_waveform(toffset=FIT_TSTART_MIN, **COMMON)
+        self.assertTrue(np.array_equal(hp_float.numpy(), hp_str.numpy()))
+
+    @unittest.skipUnless(_nrsur_available(),
+                         "pycbc/lal or NRSur7dq4 data not available")
+    def test_float_seed_matches_int_seed(self):
+        hp_f, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42.0, **COMMON)
+        hp_i, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **COMMON)
+        self.assertTrue(np.array_equal(hp_f.numpy(), hp_i.numpy()))
 
 
 if __name__ == '__main__':

@@ -418,6 +418,22 @@ def load_interpolation_function(label):
     """
     return _interpolation_cache[label]
 
+def _mode_label_list(value):
+    '''Mode-label spec -> list of label strings.
+
+    Accepts the space-separated string form ('220 221'). A single label
+    arrives as a float when read from an inference config file, where
+    numeric-looking static params are converted (e.g. mode22_omitted = 224
+    arrives as 224.0); accept that too.
+    '''
+    if value is None:
+        return []
+    if isinstance(value, (int, float)):
+        if float(value) != int(value):
+            raise ValueError(f"invalid mode label {value}")
+        value = int(value)
+    return str(value).split()
+
 def gen_nrsur_remove_qqnm(**kwds):
     '''Generate an NRSur7dq4 waveform with quadratic QNMs (QQNMs) subtracted.
 
@@ -492,9 +508,9 @@ def gen_nrsur_remove_qqnm(**kwds):
         Plus and cross polarizations.
     '''
     # requested modes
-    fit_mode22 = kwds['mode22'].split()
-    omitted_mode22 = (kwds.get('mode22_omitted') or '').split()
-    quadratic_modes = kwds['mode_quadratic'].split()
+    fit_mode22 = _mode_label_list(kwds['mode22'])
+    omitted_mode22 = _mode_label_list(kwds.get('mode22_omitted'))
+    quadratic_modes = _mode_label_list(kwds['mode_quadratic'])
     unknown = [m for m in quadratic_modes if m not in QUADRATIC_MODES]
     if unknown:
         raise ValueError(f"no amplitude-ratio table for {unknown}; "
@@ -523,7 +539,9 @@ def gen_nrsur_remove_qqnm(**kwds):
     # parent amplitudes fitted from h22
     t0 = kwds['toffset']
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
-    rng = np.random.default_rng(kwds.get('seed'))
+    # seed also arrives as a float from config files
+    seed = kwds.get('seed')
+    rng = np.random.default_rng(None if seed is None else int(seed))
 
     def fit_parent_amplitudes(t_fit):
         if omitted_mode22:
