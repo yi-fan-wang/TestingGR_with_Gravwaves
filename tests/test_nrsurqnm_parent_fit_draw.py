@@ -76,6 +76,43 @@ class ParentFitDrawTests(unittest.TestCase):
             get_td_waveform(toffset=TOFFSET_EARLY,
                             parent_fit_draw='median', **COMMON)
 
+    def test_direct_is_deterministic(self):
+        hp1, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                 parent_fit_draw='direct', **COMMON)
+        hp2, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                 parent_fit_draw='direct', **COMMON)
+        self.assertTrue(np.array_equal(hp1.numpy(), hp2.numpy()))
+
+    def test_direct_differs_from_mean_below_fit_tstart_min(self):
+        hp_direct, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                       parent_fit_draw='direct', **COMMON)
+        hp_mean, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                     parent_fit_draw='mean', **COMMON)
+        self.assertFalse(np.array_equal(hp_direct.numpy(), hp_mean.numpy()))
+
+    def test_direct_equals_single_fit_path(self):
+        # 'direct' below FIT_TSTART_MIN must reproduce the ordinary
+        # single-fit-at-t0 branch, i.e. what one gets by lowering
+        # FIT_TSTART_MIN under the same start time
+        import tgr.nrsurqnm as nr
+        hp_direct, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                       parent_fit_draw='direct', **COMMON)
+        saved = nr.FIT_TSTART_MIN
+        try:
+            nr.FIT_TSTART_MIN = 0.5 * TOFFSET_EARLY
+            hp_low, _ = get_td_waveform(toffset=TOFFSET_EARLY,
+                                        parent_fit_draw='mean', **COMMON)
+        finally:
+            nr.FIT_TSTART_MIN = saved
+        self.assertTrue(np.array_equal(hp_direct.numpy(), hp_low.numpy()))
+
+    def test_direct_ignored_above_fit_tstart_min(self):
+        hp1, _ = get_td_waveform(toffset=FIT_TSTART_MIN,
+                                 parent_fit_draw='direct', **COMMON)
+        hp2, _ = get_td_waveform(toffset=FIT_TSTART_MIN,
+                                 parent_fit_draw='mean', **COMMON)
+        self.assertTrue(np.array_equal(hp1.numpy(), hp2.numpy()))
+
 
 @unittest.skipUnless(_mode_label_list is not None, "tgr not available")
 class ModeLabelCoercionTests(unittest.TestCase):

@@ -478,15 +478,20 @@ def gen_nrsur_remove_qqnm(**kwds):
     toffset : float
         Ringdown start time t0 in seconds, e.g. 0.002. If toffset >= FIT_TSTART_MIN,
         the parent amplitudes come from a single fit at t0. Otherwise they are
-        fitted on a grid of start times (2.0 - 3.67 ms), propagated back to
-        t0, and combined according to parent_fit_draw.
+        obtained according to parent_fit_draw: either fitted on a grid of
+        start times (2.0 - 3.67 ms) and propagated back to t0, or fitted
+        directly at t0.
     parent_fit_draw : str, optional
-        How to combine the grid of parent-amplitude fits when
-        toffset < FIT_TSTART_MIN. 'gaussian' (default): each amplitude is a
+        How to obtain the parent amplitudes when toffset < FIT_TSTART_MIN.
+        'gaussian' (default): fit on the start-time grid; each amplitude is a
         Gaussian random draw over the scatter of the grid fits -- the
-        returned waveform is then stochastic. 'mean': each amplitude is the
-        mean of the grid fits -- the waveform is deterministic, but the
-        fit-scatter uncertainty is not propagated. Ignored when
+        returned waveform is then stochastic. 'mean': fit on the grid; each
+        amplitude is the mean of the grid fits -- the waveform is
+        deterministic, but the fit-scatter uncertainty is not propagated.
+        'direct': no grid; a single (weighted) least-squares fit at t0
+        itself, exactly as for toffset >= FIT_TSTART_MIN -- deterministic,
+        and the early-time overtone content is fitted rather than
+        extrapolated from later start times. Ignored when
         toffset >= FIT_TSTART_MIN.
     quadratic_tgr : float, optional
         Amplitude factor of the subtracted GR QQNM: 1 (default) subtracts
@@ -552,13 +557,14 @@ def gen_nrsur_remove_qqnm(**kwds):
             A, _, _ = least_square_qnmfitting(fit_mode22, qnm_par, t_fit, h22)
         return A
 
-    if t0 >= FIT_TSTART_MIN:
+    parent_fit_draw = kwds.get('parent_fit_draw') or 'gaussian'
+    if parent_fit_draw not in ('gaussian', 'mean', 'direct'):
+        raise ValueError(f"parent_fit_draw must be 'gaussian', 'mean' or "
+                         f"'direct', got '{parent_fit_draw}'")
+    if t0 >= FIT_TSTART_MIN or parent_fit_draw == 'direct':
+        # single fit at t0 (also below FIT_TSTART_MIN when 'direct')
         A_modes_22 = fit_parent_amplitudes(t0)
     else:
-        parent_fit_draw = kwds.get('parent_fit_draw') or 'gaussian'
-        if parent_fit_draw not in ('gaussian', 'mean'):
-            raise ValueError(f"parent_fit_draw must be 'gaussian' or 'mean', "
-                             f"got '{parent_fit_draw}'")
         fit_A_modes_22 = {m: [] for m in needed_parents}
         for t_fit in FIT_TSTART_GRID:
             this_A = fit_parent_amplitudes(t_fit)
