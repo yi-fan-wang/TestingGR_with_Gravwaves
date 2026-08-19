@@ -141,6 +141,69 @@ referenced to :math:`t_0`; the best-fit reconstruction
 complex ``TimeSeries``, useful for residual checks); and the slice of the
 target waveform that entered the fit.
 
+Optionally, positive per-sample weights :math:`w_j` may be supplied
+(``weights``), in which case the minimised residual is
+:math:`\sum_j w_j\,\lvert (GA)_j - h_j\rvert^2` — the rows of :math:`G` and
+:math:`h` are simply *whitened* by :math:`\sqrt{w_j}` before solving the
+normal equations. The weights are normalised by their median internally, so
+only their relative sizes matter.
+
+Down-weighting model error: ``weighted_least_square_qnmfitting``
+----------------------------------------------------------------
+
+Ordinary least squares treats every time sample as equally informative. For a
+noiseless numerical waveform, however, the residual is dominated by the
+*imperfection of the QNM model itself* — omitted overtones, nonlinear modes
+and tails — which is largest right after :math:`t_0` and decays away. Writing
+the data as
+
+.. math::
+
+   d(t) = h(t) + \Delta h(t) + n(t) ,
+   \qquad
+   \langle \Delta h^2 \rangle = \sigma^2(t) ,
+   \quad
+   \langle n^2 \rangle = \epsilon^2(t) ,
+
+with :math:`h` the retained-QNM model, :math:`\Delta h` the model error and
+:math:`n` the numerical noise, the statistically sound objective is
+
+.. math::
+   :label: wls-objective
+
+   \int_{t_0}^{t_1} \frac{\lvert d(t) - h(t)\rvert^2}
+                         {\epsilon(t)^2 + \sigma(t)^2}\, dt ,
+
+i.e. samples where the model is known to be inaccurate should be
+down-weighted rather than fitted at full weight.
+
+:func:`tgr.nrsurqnm.weighted_least_square_qnmfitting` implements this in two
+passes. The modes assumed to dominate the model error (``omitted_modes``,
+typically the next overtone(s) beyond the fitted ones, e.g. ``['224']`` when
+fitting ``['220', '221', '222', '223']``) are first estimated by an ordinary
+least-squares fit of ``fit_modes + omitted_modes``; their amplitudes
+:math:`|A_o|` then set the scale of the model-error envelope
+
+.. math::
+
+   \sigma^2(t) = \sum_{o\,\in\,\text{omitted}}
+       |A_o|^2\, e^{-2 (t - t_0)/\tau_o} ,
+
+and ``fit_modes`` alone are refitted with weights
+:math:`w(t) = 1/[\epsilon^2 + \sigma^2(t)]`. The omitted modes act only
+through the weighting; they are not part of the returned fit model. The
+numerical-noise floor :math:`\epsilon` (``epsilon_floor``) bounds the weights
+at late times, where the envelope has decayed to zero; if not given it
+defaults to :math:`10^{-2}` of the peak data amplitude in the fit window,
+the order suggested by envelope floor scans with ``NRSur7dq4``. A fourth
+return value collects diagnostics (pass-1 omitted amplitudes, the envelope,
+the floor and the weights).
+
+In start-time convergence studies of the ``NRSur7dq4`` :math:`(2,2)` overtone
+amplitudes, this weighting reduces the scatter of the fitted amplitudes
+across fit start times substantially — most notably for the highest fitted
+overtone, whose ordinary-least-squares amplitude is the least stable.
+
 Replacing the (4,4) ringdown: ``gen_nrsurqnm``
 ----------------------------------------------
 
@@ -180,7 +243,12 @@ the fit and do not enter the amplitude products.
 
 **Parent amplitudes.** The parent amplitudes :math:`A_{(1)}, A_{(2)}` are
 measured from the surrogate :math:`h_{22}` with
-:func:`~tgr.nrsurqnm.least_square_qnmfitting`. Overtone fits are only reliable
+:func:`~tgr.nrsurqnm.least_square_qnmfitting`, or — when the optional keyword
+``mode22_omitted`` names one or more overtones to treat as model error (with
+an optional ``wls_epsilon_floor``) — with
+:func:`~tgr.nrsurqnm.weighted_least_square_qnmfitting`, which down-weights
+the early-time samples still contaminated by the omitted overtones.
+Overtone fits are only reliable
 for start times :math:`t_0 \ge` ``FIT_TSTART_MIN`` (2 ms after the peak). For
 ``toffset`` at or beyond this threshold a single fit at :math:`t_0` is used.
 For earlier start times the modes are instead fitted on the grid
