@@ -435,6 +435,32 @@ def _mode_label_list(value):
         value = int(value)
     return str(value).split()
 
+def _parent_fit_start_grid(qnm_par, grid_mf=None):
+    '''Return the parent-mode fit start-time grid in seconds.
+
+    If ``grid_mf`` is supplied, its values are interpreted in units of the
+    sample's remnant mass and converted using the detector-frame final mass in
+    ``qnm_par``. Otherwise the historical fixed-seconds grid is returned for
+    backward compatibility.
+    '''
+    if grid_mf is None:
+        return FIT_TSTART_GRID
+
+    if isinstance(grid_mf, str):
+        values = grid_mf.split()
+    elif np.isscalar(grid_mf):
+        values = [grid_mf]
+    else:
+        values = grid_mf
+    values = np.asarray(values, dtype=float)
+    if values.ndim != 1 or len(values) < 2:
+        raise ValueError("parent_fit_grid_mf must contain at least two values")
+    if not np.all(np.isfinite(values)) or np.any(values <= 0):
+        raise ValueError("parent_fit_grid_mf values must be positive and finite")
+    if np.any(np.diff(values) <= 0):
+        raise ValueError("parent_fit_grid_mf values must be strictly increasing")
+    return values * qnm_par.final_mass * lal.MTSUN_SI
+
 def gen_nrsur_remove_qqnm(**kwds):
     '''Generate an NRSur7dq4 waveform with quadratic QNMs (QQNMs) subtracted.
 
@@ -494,6 +520,13 @@ def gen_nrsur_remove_qqnm(**kwds):
         and the early-time overtone content is fitted rather than
         extrapolated from later start times. Ignored when
         toffset >= FIT_TSTART_MIN.
+    parent_fit_grid_mf : str or sequence of float, optional
+        Increasing parent-fit start times in units of the sample's remnant
+        mass, e.g. ``'6 7 8 9 10'``. Each likelihood sample therefore uses
+        its own detector-frame final mass to convert this grid to seconds.
+        Only used with ``parent_fit_draw = gaussian`` or ``mean`` below
+        ``FIT_TSTART_MIN``. If omitted, retain the historical six-point grid
+        fixed at 2.0--3.6665 ms.
     quadratic_tgr : float, optional
         Amplitude factor of the subtracted GR QQNM: 1 (default) subtracts
         the full GR prediction, 0 subtracts nothing.
@@ -507,6 +540,20 @@ def gen_nrsur_remove_qqnm(**kwds):
     seed : int, optional
         Seed for the Gaussian amplitude draw used when toffset < FIT_TSTART_MIN,
         making that branch reproducible.
+    remove_fourfour : {0, 1}, optional
+        If 1, the entire (4,4)/(4,-4) multipole is removed from toffset
+        onwards instead of only the QQNMs (the NOFOURFOUR model); the parent
+        fit and the QQNM subtraction are skipped entirely. Default 0.
+    add441_amp : float, optional
+        Amplitude of an extra linear (4,4,1) QNM added to the (4,4) multipole
+        from toffset, in geometric units r|A|/M_f (converted to strain with
+        the sample's final mass and distance). The mode is a damped sinusoid
+        at the Kerr frequency/damping time of the sample's remnant. Default 0
+        (nothing added). Together with remove_fourfour = 1 this gives the
+        "no-44 + free 441" model.
+    add441_phi : float, optional
+        Phase (radians) of the added 441, relative to the same 'm/2 pi + pi'
+        convention as the QQNMs. Default 0.
 
     Returns
     -------
@@ -540,10 +587,15 @@ def gen_nrsur_remove_qqnm(**kwds):
                                 f_ref=kwds['f_ref'],
                                 mode_array=['22','21','20','33','32','31','30','44','43','42','41','40'])
 
-    qnm_par = get_qnm_freqtau(fit_mode22 + omitted_mode22 + quadratic_modes, **kwds)
+    # the free 441 (add441_amp) needs the 441 Kerr frequency/damping time
+    extra_linear = ['441'] if kwds.get('add441_amp') is not None else []
+    qnm_par = get_qnm_freqtau(fit_mode22 + omitted_mode22 + quadratic_modes
+                              + extra_linear, **kwds)
 
     # parent amplitudes fitted from h22
     t0 = kwds['toffset']
+    _r44 = kwds.get('remove_fourfour')
+    remove_fourfour = bool(float(_r44)) if _r44 is not None else False
     h22 = hlm[(2,2)][0] + 1j * hlm[(2,2)][1]
     # seed also arrives as a float from config files
     seed = kwds.get('seed')
@@ -562,12 +614,17 @@ def gen_nrsur_remove_qqnm(**kwds):
     if parent_fit_draw not in ('gaussian', 'mean', 'direct'):
         raise ValueError(f"parent_fit_draw must be 'gaussian', 'mean' or "
                          f"'direct', got '{parent_fit_draw}'")
-    if t0 >= FIT_TSTART_MIN or parent_fit_draw == 'direct':
+    if remove_fourfour:
+        # the whole (4,4) multipole is dropped below; no parent fit needed
+        A_modes_22 = None
+    elif t0 >= FIT_TSTART_MIN or parent_fit_draw == 'direct':
         # single fit at t0 (also below FIT_TSTART_MIN when 'direct')
         A_modes_22 = fit_parent_amplitudes(t0)
     else:
         fit_A_modes_22 = {m: [] for m in needed_parents}
-        for t_fit in FIT_TSTART_GRID:
+        fit_tstart_grid = _parent_fit_start_grid(
+            qnm_par, kwds.get('parent_fit_grid_mf'))
+        for t_fit in fit_tstart_grid:
             this_A = fit_parent_amplitudes(t_fit)
             # shift to t0
             for m in needed_parents:
@@ -586,12 +643,13 @@ def gen_nrsur_remove_qqnm(**kwds):
     # getting quadratic modes amplitude
     A_modes_quadratic = {}
     conversion = kwds['distance'] * 1e6 * lal.PC_SI / (qnm_par.final_mass * lal.MRSUN_SI)
-    for mode in quadratic_modes:
-        quad_linear_ratio_func = load_interpolation_function(mode)
-        ratio = quad_linear_ratio_func(qnm_par.final_spin)
-        mode1 = mode[:3]
-        mode2 = mode[3:]
-        A_modes_quadratic[mode] = A_modes_22[mode1] * A_modes_22[mode2] * ratio * conversion
+    if not remove_fourfour:
+        for mode in quadratic_modes:
+            quad_linear_ratio_func = load_interpolation_function(mode)
+            ratio = quad_linear_ratio_func(qnm_par.final_spin)
+            mode1 = mode[:3]
+            mode2 = mode[3:]
+            A_modes_quadratic[mode] = A_modes_22[mode1] * A_modes_22[mode2] * ratio * conversion
 
     def par(key, default):
         # this function is in case a key exist but is None,
@@ -615,15 +673,28 @@ def gen_nrsur_remove_qqnm(**kwds):
     h44_slice = h44.time_slice(start_time, end_time)
     t = h44_slice.sample_times.numpy()
 
-    for m in quadratic_modes:
-        # QQNM waveform; the leading minus sign is the 'm/2 pi + pi' phase convention of NRSur7dq4
-        qqnm_gr = -A_modes_quadratic[m] * np.exp(-1j * qnm_par.omega(m) * (t - t0) )
-        # Subtract the quadratic mode contribution from (4,4) mode
-        h44_slice.data -= tgr_factor * qqnm_gr
+    if remove_fourfour:
+        # drop the entire (4,4) multipole from t0 on (the NOFOURFOUR model);
+        # the (4,-4) mirror follows through the conjugate recombination below
+        h44_slice.data[:] = 0.0
+    else:
+        for m in quadratic_modes:
+            # QQNM waveform; the leading minus sign is the 'm/2 pi + pi' phase convention of NRSur7dq4
+            qqnm_gr = -A_modes_quadratic[m] * np.exp(-1j * qnm_par.omega(m) * (t - t0) )
+            # Subtract the quadratic mode contribution from (4,4) mode
+            h44_slice.data -= tgr_factor * qqnm_gr
 
-        if shift_freqtau:
-            omega_shifted = 2 * np.pi * qnm_par.freq[m] * (1 + deltaf) - 1j / (qnm_par.tau[m] * (1 + deltatau))
-            h44_slice.data += -A_modes_quadratic[m] * np.exp(-1j * omega_shifted * (t - t0) )
+            if shift_freqtau:
+                omega_shifted = 2 * np.pi * qnm_par.freq[m] * (1 + deltaf) - 1j / (qnm_par.tau[m] * (1 + deltatau))
+                h44_slice.data += -A_modes_quadratic[m] * np.exp(-1j * omega_shifted * (t - t0) )
+
+    # optional extra linear 441 with free amplitude/phase; add441_amp is in
+    # geometric units r|A|/M_f and converted to strain with the sample's
+    # final mass and distance (same minus-sign convention as the QQNMs)
+    a441 = par('add441_amp', 0.0)
+    if a441:
+        h44_slice.data += -(a441 / conversion) * np.exp(1j * par('add441_phi', 0.0)) \
+            * np.exp(-1j * qnm_par.omega('441') * (t - t0))
 
     # recombine the modified (4,4) mode into the polarizations
     h_pol = 0

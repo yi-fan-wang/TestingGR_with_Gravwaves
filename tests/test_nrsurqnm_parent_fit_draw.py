@@ -3,12 +3,18 @@ import unittest
 import numpy as np
 
 try:
+    import lal
     from pycbc.waveform import get_td_waveform
-    from tgr.nrsurqnm import FIT_TSTART_MIN, _mode_label_list
+    from tgr.nrsurqnm import (FIT_TSTART_GRID, FIT_TSTART_MIN, QNMTable,
+                              _mode_label_list, _parent_fit_start_grid)
 except ImportError:
+    lal = None
     get_td_waveform = None
+    FIT_TSTART_GRID = None
     FIT_TSTART_MIN = None
+    QNMTable = None
     _mode_label_list = None
+    _parent_fit_start_grid = None
 
 COMMON = dict(
     approximant='NRSur7dq4_remove_qqnm',
@@ -56,6 +62,15 @@ class ParentFitDrawTests(unittest.TestCase):
         hp1, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **COMMON)
         hp2, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **COMMON)
         self.assertTrue(np.array_equal(hp1.numpy(), hp2.numpy()))
+
+    def test_mf_grid_seeded_is_reproducible_and_changes_waveform(self):
+        kw = dict(COMMON, parent_fit_grid_mf='6 7 8 9 10',
+                  wls_epsilon_floor=1e-22)
+        hp1, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **kw)
+        hp2, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **kw)
+        hp_old, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **COMMON)
+        self.assertTrue(np.array_equal(hp1.numpy(), hp2.numpy()))
+        self.assertFalse(np.array_equal(hp1.numpy(), hp_old.numpy()))
 
     def test_mean_differs_from_gaussian_draw(self):
         hp_mean, _ = get_td_waveform(toffset=TOFFSET_EARLY,
@@ -142,6 +157,35 @@ class ModeLabelCoercionTests(unittest.TestCase):
         hp_f, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42.0, **COMMON)
         hp_i, _ = get_td_waveform(toffset=TOFFSET_EARLY, seed=42, **COMMON)
         self.assertTrue(np.array_equal(hp_f.numpy(), hp_i.numpy()))
+
+
+@unittest.skipUnless(_parent_fit_start_grid is not None, "tgr not available")
+class ParentFitStartGridTests(unittest.TestCase):
+    def setUp(self):
+        self.qnm_par = QNMTable(final_mass=100.0, final_spin=0.7,
+                                freq={}, tau={})
+
+    def test_default_retains_historical_seconds_grid(self):
+        np.testing.assert_array_equal(
+            _parent_fit_start_grid(self.qnm_par), FIT_TSTART_GRID)
+
+    def test_mf_grid_uses_sample_final_mass(self):
+        expected = np.arange(6.0, 11.0) * 100.0 * lal.MTSUN_SI
+        np.testing.assert_allclose(
+            _parent_fit_start_grid(self.qnm_par, '6 7 8 9 10'), expected,
+            rtol=0, atol=0)
+
+    def test_mf_grid_scales_with_final_mass(self):
+        other = QNMTable(final_mass=80.0, final_spin=0.7, freq={}, tau={})
+        grid_100 = _parent_fit_start_grid(self.qnm_par, [6, 7, 8, 9, 10])
+        grid_80 = _parent_fit_start_grid(other, [6, 7, 8, 9, 10])
+        np.testing.assert_allclose(grid_80 / grid_100, 0.8,
+                                   rtol=1e-15, atol=0)
+
+    def test_invalid_mf_grids_raise(self):
+        for grid in ('6', '6 6 8', '6 5', '0 6', '6 nan'):
+            with self.subTest(grid=grid), self.assertRaises(ValueError):
+                _parent_fit_start_grid(self.qnm_par, grid)
 
 
 if __name__ == '__main__':

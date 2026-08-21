@@ -6,7 +6,7 @@ from pathlib import Path
 
 from setuptools import setup, find_packages
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 README = Path(__file__).with_name('README.md').read_text(encoding='utf-8')
 
 setup (
